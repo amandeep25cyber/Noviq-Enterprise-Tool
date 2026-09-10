@@ -235,7 +235,10 @@ const ProjectDetail = ({ role }) => {
       formData.append("fileType", fileType);
       formData.append("project", id);
 
-      await uploadFile( formData );
+      const res = await uploadFile( formData );
+
+      setFiles((prev)=>[...prev,res?.data]);
+      
       setShowUpload(false);
       setIsUploading(false);
       setFile(null);

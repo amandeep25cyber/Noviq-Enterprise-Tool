@@ -8,6 +8,7 @@ const MyTasks = ()=> {
   const [todo, setTodo] = useState([]);
   const [inProgress, setInProgress] = useState([]);
   const [done, setDone] = useState([]);
+  const [isThisWeek,setIsThisWeek] = useState(false);
 
   useEffect(()=>{
     getUserTasksData();
@@ -23,6 +24,10 @@ const MyTasks = ()=> {
       toast.error(error?.response?.data?.message);
       console.log(error?.response?.data?.message);
     }
+  }
+
+  const handlerThisWeek = () =>{
+    setIsThisWeek(!isThisWeek);
   }
 
   const getAll = () => [
@@ -69,11 +74,13 @@ const MyTasks = ()=> {
           <p className="text-gray-600">{todo.length + inProgress.length + done.length} tasks · {done.length} completed</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-700">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 select-none rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-700">
             <Filter className="w-4 h-4" />
             Filter
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-sm text-gray-700">
+          <button
+           onClick={handlerThisWeek}
+           className={`flex ${isThisWeek? "bg-blue-600 border-blue-700 text-white hover:bg-blue-700": "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"} items-center gap-2 px-4 py-2  border select-none rounded-xl  transition-colors text-sm hover:cursor-pointer `}>
             <Calendar className="w-4 h-4" />
             This Week
           </button>

@@ -360,10 +360,12 @@ const uploadFileController = asyncHandler(async(req,res)=>{
         throw new ApiError(500,"Something went wrong with database.");
     }
 
+    const createdFile = await File.findById(file?._id).select("fileName uploadedBy fileUrl fileType createdAt size").populate("uploadedBy","name avatar").lean();
+
     res
     .status(201)
     .json(
-        new ApiResponse(201,file,"File uploaded")
+        new ApiResponse(201,createdFile,"File uploaded")
     )
 
 })
@@ -377,7 +379,7 @@ const getProjectFilesController = asyncHandler(async(req,res)=>{
         project,
         organisation: orgId
     })
-    .select("fileName fileUrl fileType createdAt size")
+    .select("fileName fileUrl uploadedBy fileType createdAt size")
     .populate("uploadedBy","name avatar")
     .lean();
 

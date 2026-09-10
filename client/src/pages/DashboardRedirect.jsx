@@ -15,7 +15,7 @@ function DashboardRedirect({role}) {
     return <Navigate to="member" />
   }
 
-  return <Navigate to="/sign-in" />;
+  return <Navigate to="/home" />;
 }
 
 export default DashboardRedirect;

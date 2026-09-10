@@ -29,14 +29,14 @@ import Setting from "./pages/admin/Settings.jsx"
 import Teams from "./pages/admin/Teams.jsx"
 import UserManagement from "./pages/admin/UserManagement.jsx"
 import ProjectDetail from "./components/ProjectDetail.jsx";
+import LandingPage from "./pages/LandingPage.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
 
-  const {isLoggedIn,user} = useSelector(state=>state.auth);
+  const {user} = useSelector(state=>state.auth);
 
   const role = user?.role;
-  const navigate = useNavigate();
   
   useEffect(() => {
     getCurrentUser(dispatch);
@@ -120,6 +120,7 @@ const App = () => {
         {/* Unprotected Routes */}
         <Route path="/sign-in" element={<Login />} />
         <Route path="/sign-up" element={<Register />} />
+        <Route path="/home" element={<LandingPage />} />
       </Routes>
     </>
   );

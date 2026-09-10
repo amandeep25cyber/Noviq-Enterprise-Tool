@@ -14,6 +14,8 @@ import {
   User,
   ClipboardList,
 } from "lucide-react";
+import toolLogo from "../../assets/logo.png";
+import blackTextToolName from "../../assets/blackTextToolName.png"
 
 const adminNav = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin" },
@@ -51,11 +53,11 @@ const Sidebar=({ role })=>{
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="h-16 flex items-center px-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">TM</span>
+        <div className="flex select-none items-center justify-center gap-0.5">
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img src={toolLogo} alt="Tool Logo" className="w-full rounded-lg" />
           </div>
-          <span className="font-semibold text-gray-900">TaskManager</span>
+          <span className="font-sans font-extrabold mb-1 text-2xl text-gray-800 uppercase">oviq</span>
         </div>
       </div>
       <nav className="flex-1 px-4 py-6 space-y-1">
