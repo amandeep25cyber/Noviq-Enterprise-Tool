@@ -1,9 +1,10 @@
 import { Card } from "../../components/ui/Card";
-import { Upload, Search, Grid3x3, List, Download, Share2, Trash2, MoreVertical, FileText, Image, File, X, CheckCircle2, FolderOpen } from "lucide-react";
+import { Upload, Search, Grid3x3, List, Download, Share2, Trash2, MoreVertical, FileText, Image, File, X, CheckCircle2, FolderOpen, Folder } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
-import { getFilesOfUser } from "../../services/member.services";
+import { getFilesOfUser, getInvolvedProjects, uploadFileOfMember } from "../../services/member.services";
 import { formatBytes } from "../../hooks/parseBytesData";
+import { getRelativeTime } from "../../hooks/relativeTime";
 
 const initialFiles = [
   { id: 1, name: "Homepage Design.fig", type: "design", size: "2.4 MB", modified: "2 hours ago", author: "Emily Davis" },
@@ -49,6 +50,8 @@ const Files = ({ role })=> {
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [includedInProjects, setIncludedInProjects] = useState([]);
+  const [project, setProject] = useState("");
 
   const filtered = files.filter((f) => {
     const matchSearch = f.fileName.toLowerCase().includes(search.toLowerCase()) || f.uploadedBy?.name?.toLowerCase().includes(search.toLowerCase());
@@ -62,6 +65,7 @@ const Files = ({ role })=> {
 
   useEffect(()=>{
     getFilesData();
+    getInvolvedProjectsData();
   },[])
 
   const getFilesData = async()=>{
@@ -75,26 +79,49 @@ const Files = ({ role })=> {
     }
   }
 
+  const getInvolvedProjectsData = async()=>{
+    try {
+      const result = await getInvolvedProjects();
+      setIncludedInProjects(result?.data);
+
+    } catch (error) {
+      console.log(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message);
+    }
+  }
+
   const deleteFile = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
     setShowActions(null);
   };
 
-  const addFile = () => {
-    if (!uploadName.trim()) return;
-    setFiles((prev) => [
-      {
-        id: Date.now(),
-        name: uploadName,
-        type: uploadType,
-        size: "—",
-        modified: "Just now",
-        author: "You",
-      },
-      ...prev,
-    ]);
-    setUploadName("");
-    setShowUpload(false);
+  const addFile = async() => {
+    if (!fileName.trim() || !file) return;
+    try {
+      setIsUploading(true);
+      const formData = new FormData()
+      formData.append("file", file);
+      formData.append("fileName", fileName);
+      formData.append("fileType", fileType);
+      formData.append("project", project);
+
+      const res = await uploadFileOfMember( formData );
+
+      setFiles((prev)=>[...prev,res?.data]);
+      
+      setShowUpload(false);
+      setIsUploading(false);
+      setFile(null);
+      setFileName("");
+      setFileType("document");
+      setProject("");
+      toast.success("File uploaded successfullly");
+
+    } catch (error) {
+      console.log(error.response?.data?.message);
+      toast.error(error.response?.data?.message);
+      setIsUploading(false);
+    }
   };
 
   const handleDragOver = (e) => {
@@ -207,6 +234,14 @@ const Files = ({ role })=> {
                     key={file._id || idx}
                     className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 group"
                   >
+                    {file.project?.title && (
+                            <div 
+                            title="From project"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2.5">
+                              <Folder className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="truncate">{file.project?.title}</span>
+                            </div>
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${typeColor[file.fileType]}`}>
                         <Icon className="w-6 h-6" />
@@ -250,10 +285,12 @@ const Files = ({ role })=> {
                     <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">{file.fileName}</h4>
                     <p className="text-xs text-gray-500 mb-2">{formatBytes(file.size)}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <div className="w-4 h-4 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-[7px] font-bold">{file.uploadedBy?.name?.substring(0, 2).toUpperCase()}</span>
+                      <div className="w-6 h-6 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center">
+                        <span 
+                         title={`Uploaded By: ${file.uploadedBy?.name}`}
+                         className="text-white text-[9px] font-bold">{file.uploadedBy?.name?.substring(0, 2).toUpperCase()}</span>
                       </div>
-                      {file.createdAt}
+                      {getRelativeTime(file.createdAt)}
                     </div>
                   </div>
                 );
@@ -270,7 +307,7 @@ const Files = ({ role })=> {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 text-sm truncate">{file.fileName}</p>
-                      <p className="text-xs text-gray-500">{file.uploadedBy?.name} · {file.createdAt}</p>
+                      <p className="text-xs text-gray-500">{file.uploadedBy?.name} · {getRelativeTime(file.createdAt)}</p>
                     </div>
                     <span className="text-xs text-gray-400 hidden sm:block">{typeLabels[file.fileType]}</span>
                     <span className="text-sm text-gray-500 w-16 text-right">{formatBytes(file.size)}</span>
@@ -362,6 +399,22 @@ const Files = ({ role })=> {
                   <option value="design">Design File</option>
                   <option value="image">Image</option>
                   <option value="spreadsheet">Spreadsheet</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1.5">In Project</label>
+                <select
+                  value={project}
+                  onChange={(e) => setProject(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+                >
+                  <option value="">Select Project</option>
+                  {
+                    includedInProjects.map((project,idx)=>(
+                      <option key={project._id || idx } value={project._id}>{project.title}</option>
+                    ))
+                  }
                 </select>
               </div>
             </div>

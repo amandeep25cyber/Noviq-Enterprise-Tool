@@ -337,6 +337,13 @@ const uploadFileController = asyncHandler(async(req,res)=>{
         throw new ApiError(400,"Invalid file category selected")
     }
 
+    const existedProject = await Project.findById(project);
+
+    if(!existedProject){
+        fs.unlinkSync(filePathName);
+        throw new ApiError(403,"Project doesn't exists.")
+    }
+
     const response = await uploadOnCloudinary(filePathName);
 
     if(!response){

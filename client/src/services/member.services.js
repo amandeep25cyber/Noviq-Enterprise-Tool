@@ -43,10 +43,33 @@ const getFilesOfUser = async()=>{
     return res?.data;
 }
 
+const getInvolvedProjects = async() =>{
+
+    const res = await axios.get(`${API_URL}/member/projects`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
+const uploadFileOfMember = async(data) =>{
+
+    const res = await axios.post(`${API_URL}/member/file`,data,{
+        withCredentials: true,
+        headers: {
+            "Content-Type": "multipart/form-data"
+        }
+    })
+
+    return res?.data;
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
     updateLogtimeAndStatus,
     getUserTasks,
     getFilesOfUser,
+    getInvolvedProjects,
+    uploadFileOfMember,
 }
