@@ -64,6 +64,15 @@ const uploadFileOfMember = async(data) =>{
     return res?.data;
 }
 
+const deleteFileById = async(id) =>{
+
+    const res = await axios.delete(`${API_URL}/member/file/${id}`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
@@ -72,4 +81,5 @@ export {
     getFilesOfUser,
     getInvolvedProjects,
     uploadFileOfMember,
+    deleteFileById,
 }

@@ -1,5 +1,6 @@
 import { File } from "../../models/file.models.js";
 import { Project } from "../../models/project.models.js";
+import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { uploadOnCloudinary, deleteFromCloudinary } from "../../utils/cloudinary.js"
@@ -116,8 +117,40 @@ const uploadFileforMemberController = asyncHandler(async(req,res)=>{
 
 })
 
+const deleteFile = asyncHandler(async(req,res)=>{
+    const { fileId } = req.params;
+    const userId = req.user?._id;
+
+    const file = await File.findById(fileId).populate("project").populate("uploadedBy").select("resourceType uploadedBy project publicId");
+
+    if(!file){
+        throw new ApiError(404,"File doesn't exists!");
+    }
+
+    const isValidPersonToDelete = file.project?.members?.includes(userId.toString()) && file.uploadedBy?._id?.toString() === userId.toString();
+
+    if(!isValidPersonToDelete){
+        throw new ApiError(403,"You are not allowed to delete.")
+    }
+
+    await deleteFromCloudinary(file.publicId, file.resourceType || "image");
+
+    const deletedFile = await File.findByIdAndDelete(fileId);
+
+    if(!deletedFile){
+        throw new ApiError(500,"Something went wrong while deleting file from database.")
+    }
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200, {}, "File deleted successfully!")
+    )
+})
+
 export {
     getFilesController,
     getUserInvolvedProjects,
     uploadFileforMemberController,
+    deleteFile,
 }

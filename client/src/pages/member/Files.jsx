@@ -1,21 +1,11 @@
 import { Card } from "../../components/ui/Card";
-import { Upload, Search, Grid3x3, List, Download, Share2, Trash2, MoreVertical, FileText, Image, File, X, CheckCircle2, FolderOpen, Folder } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Upload, Search, Grid3x3, List, Download, Loader, Share2, Trash2, MoreVertical, FileText, Image, File, X, Folder } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import { getFilesOfUser, getInvolvedProjects, uploadFileOfMember } from "../../services/member.services";
-import { formatBytes } from "../../hooks/parseBytesData";
-import { getRelativeTime } from "../../hooks/relativeTime";
-
-const initialFiles = [
-  { id: 1, name: "Homepage Design.fig", type: "design", size: "2.4 MB", modified: "2 hours ago", author: "Emily Davis" },
-  { id: 2, name: "Project Brief.pdf", type: "document", size: "856 KB", modified: "1 day ago", author: "Mike Chen" },
-  { id: 3, name: "API Documentation.docx", type: "document", size: "1.2 MB", modified: "3 days ago", author: "John Smith" },
-  { id: 4, name: "Brand Guidelines.pdf", type: "document", size: "5.8 MB", modified: "1 week ago", author: "Sarah Johnson" },
-  { id: 5, name: "Wireframes.sketch", type: "design", size: "3.2 MB", modified: "2 weeks ago", author: "Emily Davis" },
-  { id: 6, name: "Sprint Planning.xlsx", type: "spreadsheet", size: "445 KB", modified: "3 weeks ago", author: "Lisa Wong" },
-  { id: 7, name: "Team Photo.png", type: "image", size: "1.8 MB", modified: "1 month ago", author: "David Miller" },
-  { id: 8, name: "Meeting Notes.docx", type: "document", size: "128 KB", modified: "1 month ago", author: "Mike Chen" },
-];
+import { deleteFileById, getFilesOfUser, getInvolvedProjects, uploadFileOfMember } from "../../services/member.services.js";
+import { formatBytes } from "../../hooks/parseBytesData.js";
+import { getRelativeTime } from "../../hooks/relativeTime.js";
+import { useSelector } from "react-redux";
 
 const typeIcon = {
   design: Image,
@@ -52,6 +42,8 @@ const Files = ({ role })=> {
   const [isUploading, setIsUploading] = useState(false);
   const [includedInProjects, setIncludedInProjects] = useState([]);
   const [project, setProject] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const user = useSelector(state=>state.auth.user);
 
   const filtered = files.filter((f) => {
     const matchSearch = f.fileName.toLowerCase().includes(search.toLowerCase()) || f.uploadedBy?.name?.toLowerCase().includes(search.toLowerCase());
@@ -79,6 +71,27 @@ const Files = ({ role })=> {
     }
   }
 
+  const getFileDownloadUrl = (url,fileName) =>{
+    if(!url) return "";
+    const replacedValue = "/upload/";
+    const safeFileName = fileName 
+        ? fileName.split('.')[0].replace(/[^a-zA-Z0-9_-]/g, "") 
+        : "";
+
+    return url.replace(replacedValue,`${replacedValue}fl_attachment${safeFileName? `:${safeFileName}/` :"/"}`);
+  }
+
+  const handleShare = async (fileUrl) => {
+    try {
+        await navigator.clipboard.writeText(fileUrl);
+        
+        toast.success("Link copied to clipboard!"); 
+    } catch (error) {
+        console.error("Failed to copy:", error);
+        toast.error("Failed to copy link");
+    }
+};
+
   const getInvolvedProjectsData = async()=>{
     try {
       const result = await getInvolvedProjects();
@@ -90,8 +103,17 @@ const Files = ({ role })=> {
     }
   }
 
-  const deleteFile = (id) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+  const deleteFile = async(id) => {
+    setIsDeleting(true);
+    try {
+      await deleteFileById(id);
+      setFiles((prev) => prev.filter((f) => f._id !== id));
+      toast.success("File deleted successfully.")
+    } catch (error) {
+      console.log(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message);
+    }
+    setIsDeleting(false);
     setShowActions(null);
   };
 
@@ -162,7 +184,8 @@ const Files = ({ role })=> {
         </div>
         <button
           onClick={() => setShowUpload(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
+          // disabled = {isUploading}
+          className="flex items-center select-none hover:cursor-pointer gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors text-sm font-medium"
         >
           <Upload className="w-4 h-4" />
           Upload File
@@ -255,26 +278,36 @@ const Files = ({ role })=> {
                         </button>
                         {showActions === file._id && (
                           <div className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-10">
-                            <button
+                            <a
+                              href={`${getFileDownloadUrl(file.fileUrl, file.fileName)}`}
                               onClick={() => { setShowActions(null);}}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
                               <Download className="w-4 h-4" /> Download
-                            </button>
+                            </a>
                             <button
-                              onClick={() => { setShowActions(null);}}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                              onClick={() => { handleShare(file.fileUrl);}}
+                              className="w-full hover:cursor-pointer px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
                               <Share2 className="w-4 h-4" /> Share
                             </button>
-                            {(role === "admin" || role === "manager") && (
+                            {(role === "admin" || role === "manager" || file.uploadedBy?._id?.toString()===user?._id?.toString()) && (
                               <>
                                 <div className="my-1 border-t border-gray-100" />
                                 <button
                                   onClick={() => deleteFile(file._id)}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  disabled = {isDeleting}
+                                  className="w-full hover:cursor-pointer px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
-                                  <Trash2 className="w-4 h-4" /> Delete
+                                  {isDeleting ? (
+                                    <>
+                                      <Loader className="w-4 h-4 animate-spin" /> Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="w-4 h-4" /> Delete
+                                    </>
+                                  )}
                                 </button>
                               </>
                             )}
@@ -300,8 +333,17 @@ const Files = ({ role })=> {
             <div className="space-y-1">
               {filtered.map((file, idx) => {
                 const Icon = typeIcon[file.fileType];
-                return ( 
-                  <div key={file._id || idx} className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors group">
+                return (
+                  <div key={file._id || idx} className="hover:bg-gray-50 px-4 py-3 rounded-xl gap-4 transition-colors group">
+                    {file.project?.title && (
+                            <div 
+                            title="From project"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2">
+                              <Folder className="w-3.5 h-3.5 text-gray-400" />
+                              <span className="truncate">{file.project?.title}</span>
+                            </div>
+                    )}
+                  <div className="flex items-center gap-4 transition-colors group">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${typeColor[file.fileType]}`}>
                       <Icon className="w-4 h-4" />
                     </div>
@@ -312,25 +354,28 @@ const Files = ({ role })=> {
                     <span className="text-xs text-gray-400 hidden sm:block">{typeLabels[file.fileType]}</span>
                     <span className="text-sm text-gray-500 w-16 text-right">{formatBytes(file.size)}</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <a
+                        href={`${getFileDownloadUrl(file.fileUrl, file.fileName)}`}
                         className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         <Download className="w-4 h-4 text-gray-600" />
-                      </button>
+                      </a>
                       <button
-                        className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                        onClick={()=> handleShare(file.fileUrl)}
+                        className="p-1.5 hover:cursor-pointer hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         <Share2 className="w-4 h-4 text-gray-600" />
                       </button>
                       {(role === "admin" || role === "manager") && (
                         <button
                           onClick={() => deleteFile(file._id)}
-                          className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                          className="p-1.5 hover:cursor-pointer hover:bg-red-100 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </button>
                       )}
                     </div>
+                  </div>
                   </div>
                 );
               })}
@@ -427,10 +472,10 @@ const Files = ({ role })=> {
               </button>
               <button
                 onClick={addFile}
-                disabled={!fileName.trim() || !file}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
+                disabled={!fileName.trim() || !file || isUploading || project==""}
+                className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-80 hover:cursor-pointer`}
               >
-                {isUploading ? "Uploading...": "Upload"}
+                {isUploading ? (<> <Loader className="w-5 mx-auto text-white h-5 animate-spin"/></>): "Upload"}
               </button>
             </div>
           </div>
