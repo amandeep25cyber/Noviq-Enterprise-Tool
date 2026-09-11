@@ -34,9 +34,19 @@ const getUserTasks = async()=>{
     return res?.data;
 }
 
+const getFilesOfUser = async()=>{
+
+    const res = await axios.get(`${API_URL}/member/files`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
     updateLogtimeAndStatus,
     getUserTasks,
+    getFilesOfUser,
 }

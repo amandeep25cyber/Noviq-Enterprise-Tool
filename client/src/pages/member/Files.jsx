@@ -1,6 +1,9 @@
 import { Card } from "../../components/ui/Card";
 import { Upload, Search, Grid3x3, List, Download, Share2, Trash2, MoreVertical, FileText, Image, File, X, CheckCircle2, FolderOpen } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
+import { getFilesOfUser } from "../../services/member.services";
+import { formatBytes } from "../../hooks/parseBytesData";
 
 const initialFiles = [
   { id: 1, name: "Homepage Design.fig", type: "design", size: "2.4 MB", modified: "2 hours ago", author: "Emily Davis" },
@@ -35,37 +38,46 @@ const typeLabels = {
 };
 
 const Files = ({ role })=> {
-  const [files, setFiles] = useState(initialFiles);
+  const [files, setFiles] = useState([]);
   const [viewMode, setViewMode] = useState("grid");
   const [showActions, setShowActions] = useState(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All Files");
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadName, setUploadName] = useState("");
-  const [uploadType, setUploadType] = useState("document");
-  const [toast, setToast] = useState(null);
-  const dropRef = useRef(null);
-  const [draggingOver, setDraggingOver] = useState(false);
-
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
+  const [fileName, setFileName] = useState("");
+  const [fileType, setFileType] = useState("document");
+  const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const filtered = files.filter((f) => {
-    const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) || f.author.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = f.fileName.toLowerCase().includes(search.toLowerCase()) || f.uploadedBy?.name?.toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === "All Files" ||
-      (typeFilter === "Documents" && f.type === "document") ||
-      (typeFilter === "Images" && (f.type === "image" || f.type === "design")) ||
-      (typeFilter === "Spreadsheets" && f.type === "spreadsheet") ||
-      (typeFilter === "Design Files" && f.type === "design");
+      (typeFilter === "Documents" && f.fileType === "document") ||
+      (typeFilter === "Images" && (f.fileType === "image" || f.type === "design")) ||
+      (typeFilter === "Spreadsheets" && f.fileType === "spreadsheet") ||
+      (typeFilter === "Design Files" && f.fileType === "design");
     return matchSearch && matchType;
   });
+
+  useEffect(()=>{
+    getFilesData();
+  },[])
+
+  const getFilesData = async()=>{
+    try {
+      const result = await getFilesOfUser();
+      setFiles(result?.data);
+
+    } catch (error) {
+      console.log(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message);
+    }
+  }
 
   const deleteFile = (id) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
     setShowActions(null);
-    showToast("File deleted");
   };
 
   const addFile = () => {
@@ -83,40 +95,38 @@ const Files = ({ role })=> {
     ]);
     setUploadName("");
     setShowUpload(false);
-    showToast("File uploaded successfully");
   };
 
-  const handleDropZone = (e) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
-    setDraggingOver(false);
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    if (droppedFiles.length === 0) return;
-    const newFiles = droppedFiles.map((f) => ({
-      id: Date.now() + Math.random(),
-      name: f.name,
-      type: f.type.includes("image") ? "image" : "document",
-      size: `${(f.size / 1024).toFixed(0)} KB`,
-      modified: "Just now",
-      author: "You",
-    }));
-    setFiles((prev) => [...newFiles, ...prev]);
-    showToast(`${droppedFiles.length} file${droppedFiles.length > 1 ? "s" : ""} uploaded`);
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+      console.log(e.dataTransfer.files);
+    }
   };
 
   const totalSize = files.reduce((acc, f) => {
-    const num = parseFloat(f.size);
-    const unit = f.size.includes("MB") ? 1 : 0.001;
+    const formattedBytes = formatBytes(f.size);
+    const num = parseFloat(formattedBytes);
+    const unit = formattedBytes.includes("MB") ? 1 : 0.001;
     return acc + (isNaN(num) ? 0 : num * unit);
+
   }, 0);
 
   return (
     <div className="space-y-6">
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="text-sm font-medium">{toast}</span>
-        </div>
-      )}
 
       <div className="flex items-center justify-between">
         <div>
@@ -130,22 +140,6 @@ const Files = ({ role })=> {
           <Upload className="w-4 h-4" />
           Upload File
         </button>
-      </div>
-
-      {/* Drop Zone */}
-      <div
-        ref={dropRef}
-        onDragOver={(e) => { e.preventDefault(); setDraggingOver(true); }}
-        onDragLeave={() => setDraggingOver(false)}
-        onDrop={handleDropZone}
-        className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
-          draggingOver ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-gray-50 hover:border-gray-300"
-        }`}
-      >
-        <FolderOpen className={`w-8 h-8 mx-auto mb-2 ${draggingOver ? "text-blue-500" : "text-gray-400"}`} />
-        <p className={`text-sm font-medium ${draggingOver ? "text-blue-600" : "text-gray-500"}`}>
-          {draggingOver ? "Drop to upload" : "Drag & drop files here, or click Upload"}
-        </p>
       </div>
 
       <Card>
@@ -206,34 +200,34 @@ const Files = ({ role })=> {
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((file) => {
-                const Icon = typeIcon[file.type];
+              {filtered.map((file, idx) => {
+                const Icon = typeIcon[file.fileType];
                 return (
                   <div
-                    key={file.id}
+                    key={file._id || idx}
                     className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200 group"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${typeColor[file.type]}`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${typeColor[file.fileType]}`}>
                         <Icon className="w-6 h-6" />
                       </div>
                       <div className="relative">
                         <button
-                          onClick={() => setShowActions(showActions === file.id ? null : file.id)}
+                          onClick={() => setShowActions(showActions === file._id ? null : file._id)}
                           className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                         >
                           <MoreVertical className="w-4 h-4 text-gray-600" />
                         </button>
-                        {showActions === file.id && (
+                        {showActions === file._id && (
                           <div className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-10">
                             <button
-                              onClick={() => { setShowActions(null); showToast("Download started"); }}
+                              onClick={() => { setShowActions(null);}}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
                               <Download className="w-4 h-4" /> Download
                             </button>
                             <button
-                              onClick={() => { setShowActions(null); showToast("Link copied!"); }}
+                              onClick={() => { setShowActions(null);}}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
                               <Share2 className="w-4 h-4" /> Share
@@ -242,7 +236,7 @@ const Files = ({ role })=> {
                               <>
                                 <div className="my-1 border-t border-gray-100" />
                                 <button
-                                  onClick={() => deleteFile(file.id)}
+                                  onClick={() => deleteFile(file._id)}
                                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <Trash2 className="w-4 h-4" /> Delete
@@ -253,13 +247,13 @@ const Files = ({ role })=> {
                         )}
                       </div>
                     </div>
-                    <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">{file.name}</h4>
-                    <p className="text-xs text-gray-500 mb-2">{file.size}</p>
+                    <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">{file.fileName}</h4>
+                    <p className="text-xs text-gray-500 mb-2">{formatBytes(file.size)}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
                       <div className="w-4 h-4 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-[7px] font-bold">{file.author.substring(0, 2).toUpperCase()}</span>
+                        <span className="text-white text-[7px] font-bold">{file.uploadedBy?.name?.substring(0, 2).toUpperCase()}</span>
                       </div>
-                      {file.modified}
+                      {file.createdAt}
                     </div>
                   </div>
                 );
@@ -267,35 +261,33 @@ const Files = ({ role })=> {
             </div>
           ) : (
             <div className="space-y-1">
-              {filtered.map((file) => {
-                const Icon = typeIcon[file.type];
-                return (
-                  <div key={file.id} className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors group">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${typeColor[file.type]}`}>
+              {filtered.map((file, idx) => {
+                const Icon = typeIcon[file.fileType];
+                return ( 
+                  <div key={file._id || idx} className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors group">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${typeColor[file.fileType]}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 text-sm truncate">{file.name}</p>
-                      <p className="text-xs text-gray-500">{file.author} · {file.modified}</p>
+                      <p className="font-medium text-gray-900 text-sm truncate">{file.fileName}</p>
+                      <p className="text-xs text-gray-500">{file.uploadedBy?.name} · {file.createdAt}</p>
                     </div>
-                    <span className="text-xs text-gray-400 hidden sm:block">{typeLabels[file.type]}</span>
-                    <span className="text-sm text-gray-500 w-16 text-right">{file.size}</span>
+                    <span className="text-xs text-gray-400 hidden sm:block">{typeLabels[file.fileType]}</span>
+                    <span className="text-sm text-gray-500 w-16 text-right">{formatBytes(file.size)}</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => showToast("Download started")}
                         className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         <Download className="w-4 h-4 text-gray-600" />
                       </button>
                       <button
-                        onClick={() => showToast("Link copied!")}
                         className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         <Share2 className="w-4 h-4 text-gray-600" />
                       </button>
                       {(role === "admin" || role === "manager") && (
                         <button
-                          onClick={() => deleteFile(file.id)}
+                          onClick={() => deleteFile(file._id)}
                           className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
@@ -321,17 +313,40 @@ const Files = ({ role })=> {
               </button>
             </div>
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-gray-700">Click to browse or drag file here</p>
+              <label 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`block border-2 border-dashed select-none rounded-xl p-8 text-center transition-colors cursor-pointer 
+                  ${isDragging 
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 bg-gray-50 hover:border-blue-400"
+                  }`}
+              >
+                <input 
+                  type="file" 
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setFile(e.target.files[0]);
+                    }
+                  }} 
+                />
+
+                <Upload className={`w-8 h-8 mx-auto mb-2 ${isDragging ? "text-blue-500" : "text-gray-400"}`} />
+      
+                <p className="text-sm font-medium text-gray-700">
+                  {file ? file.name : "Click to browse or drag file here"}
+                </p>
+      
                 <p className="text-xs text-gray-400 mt-1">Max 50 MB per file</p>
-              </div>
+              </label>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">File Name</label>
                 <input
                   autoFocus
-                  value={uploadName}
-                  onChange={(e) => setUploadName(e.target.value)}
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
                   placeholder="filename.ext"
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
@@ -339,8 +354,8 @@ const Files = ({ role })=> {
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">File Type</label>
                 <select
-                  value={uploadType}
-                  onChange={(e) => setUploadType(e.target.value)}
+                  value={fileType}
+                  onChange={(e) => setFileType(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
                 >
                   <option value="document">Document</option>
@@ -359,10 +374,10 @@ const Files = ({ role })=> {
               </button>
               <button
                 onClick={addFile}
-                disabled={!uploadName.trim()}
+                disabled={!fileName.trim() || !file}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
               >
-                Upload
+                {isUploading ? "Uploading...": "Upload"}
               </button>
             </div>
           </div>
