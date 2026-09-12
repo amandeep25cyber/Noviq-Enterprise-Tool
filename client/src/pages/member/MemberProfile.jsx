@@ -11,11 +11,20 @@ import {
   Edit3,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { getUserDetails } from "../../services/member.services";
+import { getUserDetails, updateUserProfileDetails } from "../../services/member.services";
 
 const MemberProfile = () => {
 
     const [userData, setUserData] = useState({});
+    // Form States
+    const [formData, setFormData] = useState({
+        name: userData?.name || "",
+        phoneNo: userData?.phoneNo || "",
+        bio: userData?.bio || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
 
     useEffect(()=>{
         getUserData();
@@ -25,6 +34,12 @@ const MemberProfile = () => {
         try {
             const result = await getUserDetails();
             setUserData(result?.data);
+            setFormData((prev)=>({
+                ...prev,
+                name: result?.data?.name,
+                phoneNo: result?.data?.phoneNo,
+                bio: result?.data?.bio,
+            }))
             
         } catch (error) {
             console.log(error?.response?.data?.message);
@@ -32,71 +47,87 @@ const MemberProfile = () => {
         }
     }
     
-    // --- MOCK DATA (Agar API se data aane me time lage, toh ye dikhega) ---
-    
 
-  // --- STATES FOR MODAL ---
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("general"); // 'general' | 'security'
-  const modalRef = useRef(null);
+    // --- STATES FOR MODAL ---
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState("general"); // 'general' | 'security'
+    const modalRef = useRef(null);
 
-  // Form States
-  const [formData, setFormData] = useState({
-    name: userData.name,
-    phoneNo: userData.phoneNo,
-    bio: userData.bio,
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (
-        isModalOpen &&
-        modalRef.current &&
-        !modalRef.current.contains(e.target)
-      ) {
-        setIsModalOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [isModalOpen]);
+    useEffect(() => {
+        const handler = (e) => {
+            if (
+                isModalOpen &&
+                modalRef.current &&
+                !modalRef.current.contains(e.target)
+            ) {
+                setIsModalOpen(false);
+                setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [isModalOpen]);
 
-  // --- HELPERS ---
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+    const isSubmitDisabled = () =>{
+        if(activeTab === "general" && formData.name === userData.name && formData.bio === userData.bio && formData.phoneNo === userData.phoneNo){
+            return true;
+        }
 
-  const calculateTenure = (dateString) => {
-    const months = Math.floor(
-      (new Date() - new Date(dateString)) / (1000 * 60 * 60 * 24 * 30),
-    );
-    return months > 0 ? `${months} Months` : "Less than a month";
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleUpdateProfile = (e) => {
-    e.preventDefault();
-    if (activeTab === "general") {
-      console.log("Updating Details & Avatar via API...", formData);
-      // TODO: Call PUT /api/users/profile
-    } else {
-      console.log("Updating Password via API...", formData);
-      // TODO: Call PUT /api/users/change-password
+        if(activeTab === "security" && !(formData.confirmPassword && formData.currentPassword && formData.newPassword)){
+            return true;
+        }
+        return false;
     }
-    setIsModalOpen(false);
-  };
 
-  return (
+    // --- HELPERS ---
+    const formatDate = (dateString) => {
+        return new Date(dateString).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+        });
+    };
+
+    const calculateTenure = (dateString) => {
+        const months = Math.floor(
+            (new Date() - new Date(dateString)) / (1000 * 60 * 60 * 24 * 30),
+        );
+        return months > 0 ? `${months} Months` : "Less than a month";
+    };
+
+    const handleInputChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleUpdateProfile = async(e) => {
+        e.preventDefault();
+        if (activeTab === "general") {
+            try {
+                const res = await updateUserProfileDetails({
+                    name: formData.name,
+                    phoneNo: formData.phoneNo,
+                    bio: formData.bio,
+                });
+
+                console.log(res?.data);
+                setUserData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
+                setFormData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
+                toast.success("Profile Updated!");
+
+            } catch (error) {
+                toast.error(error?.response?.data?.message);
+                console.log(error?.response?.data?.message);
+                setFormData(prev=>({...prev,name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio }));
+            }
+        } else {
+            console.log("Updating Password via API...", formData);
+            // TODO: Call PUT /api/users/change-password
+        }
+        setIsModalOpen(false);
+    };
+
+    return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans text-gray-800">
       {/* --- HEADER --- */}
       <div className="mb-8 flex justify-between items-center">
@@ -312,7 +343,10 @@ const MemberProfile = () => {
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                    setIsModalOpen(false); 
+                    setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+                }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={24} />
@@ -367,6 +401,7 @@ const MemberProfile = () => {
                     </label>
                     <input
                       type="text"
+                      placeholder="St. Joseph"
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
@@ -379,6 +414,7 @@ const MemberProfile = () => {
                     </label>
                     <input
                       type="text"
+                      placeholder="+91 1213830159"
                       name="phoneNo"
                       value={formData.phoneNo}
                       onChange={handleInputChange}
@@ -391,6 +427,7 @@ const MemberProfile = () => {
                     </label>
                     <textarea
                       name="bio"
+                      placeholder="Hii! I am new here."
                       value={formData.bio}
                       onChange={handleInputChange}
                       rows="3"
@@ -420,7 +457,7 @@ const MemberProfile = () => {
                       value={formData.currentPassword}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      placeholder="••••••••"
+                      placeholder="*******"
                     />
                   </div>
                   <div>
@@ -433,7 +470,7 @@ const MemberProfile = () => {
                       value={formData.newPassword}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      placeholder="••••••••"
+                      placeholder="*******"
                     />
                   </div>
                   <div>
@@ -446,7 +483,7 @@ const MemberProfile = () => {
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      placeholder="••••••••"
+                      placeholder="*******"
                     />
                   </div>
                 </div>
@@ -456,14 +493,18 @@ const MemberProfile = () => {
               <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() =>{ 
+                    setIsModalOpen(false);
+                    setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+                }}
                   className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                  disabled ={isSubmitDisabled()}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm disabled:opacity-40"
                 >
                   Save Changes
                 </button>
@@ -473,7 +514,7 @@ const MemberProfile = () => {
         </div>
       )}
     </div>
-  );
+    );
 };
 
 export default MemberProfile;

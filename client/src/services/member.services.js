@@ -82,6 +82,15 @@ const getUserDetails = async() =>{
     return res?.data;
 }
 
+const updateUserProfileDetails = async(data) =>{
+
+    const res = await axios.put(`${API_URL}/member/profile`,data,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
@@ -92,4 +101,5 @@ export {
     uploadFileOfMember,
     deleteFileById,
     getUserDetails,
+    updateUserProfileDetails,
 }

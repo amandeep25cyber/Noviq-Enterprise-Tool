@@ -56,6 +56,44 @@ const userStatsWithDetails = asyncHandler(async(req,res)=>{
     )
 })
 
+const updateUserProfile = asyncHandler(async(req,res)=>{
+    const userId = req.user?._id;
+    const orgId = req.user?.organisation;
+
+    const { name, phoneNo, bio } = req.body;
+
+    if(!userId){
+        throw new ApiError(401,"Unauthorized user!");
+    }
+
+    if(!name){
+        throw new ApiError(402,"Full name is must.");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        {
+            $set:{ name: name, phoneNo: phoneNo, bio: bio}
+        },
+        {
+            new: true,
+            runValidators: true,
+        }
+    )
+    .select("name phoneNo bio");
+
+    if(!user){
+        throw new ApiError(500,"Something went wrong while updating profile details.")
+    }
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200, user, "User updated successfully.")
+    )
+})
+
 export {
     userStatsWithDetails,
+    updateUserProfile,
 }
