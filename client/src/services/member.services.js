@@ -91,6 +91,13 @@ const updateUserProfileDetails = async(data) =>{
     return res?.data;
 }
 
+const changePassword = async(data) =>{
+
+    await axios.put(`${API_URL}/member/password`,data,{
+        withCredentials: true,
+    })
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
@@ -102,4 +109,5 @@ export {
     deleteFileById,
     getUserDetails,
     updateUserProfileDetails,
+    changePassword,
 }

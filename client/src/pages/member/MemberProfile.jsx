@@ -11,10 +11,14 @@ import {
   Edit3,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { getUserDetails, updateUserProfileDetails } from "../../services/member.services";
+import { changePassword, getUserDetails, updateUserProfileDetails } from "../../services/member.services";
+import { useDispatch, useSelector } from "react-redux";
+import { updateUserData } from "../../store/features/authSlice";
 
 const MemberProfile = () => {
 
+    const dispatch = useDispatch();
+    const user = useSelector(state => state.auth.user);
     const [userData, setUserData] = useState({});
     // Form States
     const [formData, setFormData] = useState({
@@ -110,21 +114,33 @@ const MemberProfile = () => {
                     bio: formData.bio,
                 });
 
-                console.log(res?.data);
+                dispatch(updateUserData({...user, name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio}));
                 setUserData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
                 setFormData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
                 toast.success("Profile Updated!");
+                setIsModalOpen(false);
 
             } catch (error) {
                 toast.error(error?.response?.data?.message);
                 console.log(error?.response?.data?.message);
-                setFormData(prev=>({...prev,name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio }));
             }
         } else {
             console.log("Updating Password via API...", formData);
             // TODO: Call PUT /api/users/change-password
+            if(formData.newPassword !== formData.confirmPassword){
+                toast.error("New Password does not match with Confirm Password.");
+            }
+            try {
+                await changePassword({ oldPassword: formData?.currentPassword , newPassword: formData?.newPassword , confirmNewPassword: formData?.confirmPassword });
+                setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "" });
+                toast.success("Password changed successfully.");
+                setIsModalOpen(false);
+
+            } catch (error) {
+                toast.error(error?.response?.data?.message);
+                console.log(error?.response?.data?.message);
+            }
         }
-        setIsModalOpen(false);
     };
 
     return (
@@ -167,7 +183,7 @@ const MemberProfile = () => {
                 ) : (
                   <span>
                     {userData?.name?.split(" ")
-                      .map((n) => n[0])
+                      .map((n) => n[0].toUpperCase())
                       .join("")}
                   </span>
                 )}

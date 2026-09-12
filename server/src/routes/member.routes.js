@@ -5,7 +5,7 @@ import { getDashboardStats, getTodaysTasks, logTaskTime } from "../controllers/m
 import { getUserTasks } from "../controllers/member/Taskboard.member.js";
 import { deleteFile, getFilesController, getUserInvolvedProjects, uploadFileforMemberController } from "../controllers/member/files.member.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js"
-import { updateUserProfile, userStatsWithDetails } from "../controllers/member/profile.member.controllers.js";
+import { changePasswordController, updateUserProfile, userStatsWithDetails } from "../controllers/member/profile.member.controllers.js";
 
 const router = Router();
 
@@ -19,5 +19,6 @@ router.route('/file').post(verifyUser,isMember,upload.single("file"),uploadFilef
 router.route('/file/:fileId').delete(verifyUser,isMember,deleteFile);
 router.route('/profile').get(verifyUser,isMember,userStatsWithDetails);
 router.route('/profile').put(verifyUser,isMember,updateUserProfile);
+router.route('/password').put(verifyUser,isMember,changePasswordController);
 
 export default router;

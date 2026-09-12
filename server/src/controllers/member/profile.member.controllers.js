@@ -93,7 +93,46 @@ const updateUserProfile = asyncHandler(async(req,res)=>{
     )
 })
 
+const changePasswordController = asyncHandler(async(req,res)=>{
+    const { oldPassword, newPassword, confirmNewPassword} = req.body;
+    const userId = req.user?._id;
+    const orgId = req.user?.organisation;
+
+    if(!oldPassword || !newPassword || !confirmNewPassword){
+        throw new ApiError(401,"Invalid Credentials.")
+    }
+
+    if(newPassword !== confirmNewPassword){
+        throw new ApiError(401, "New password is not matching with confirm new password.")
+    }
+
+    const existedUser = await User.findOne({_id: userId, organisation: orgId}).select("+password");
+
+    if(!existedUser){
+        throw new ApiError(403, "User doesn't exists.");
+    }
+
+    const isPasswordMatched = await existedUser.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordMatched){
+        throw new ApiError(403, "Password is incorrect.")
+    }
+
+    existedUser.password = newPassword;
+
+    existedUser.save({
+        runValidators: true,
+    })
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200, {}, "Password Changed!")
+    )
+})
+
 export {
     userStatsWithDetails,
     updateUserProfile,
+    changePasswordController,
 }
