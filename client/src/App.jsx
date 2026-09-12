@@ -15,7 +15,6 @@ import MyTasks from "./pages/member/MyTasks.jsx"
 import Chat from "./pages/member/Chat.jsx"
 import Files from "./pages/member/Files.jsx"
 import Calendar from "./pages/member/Calendar.jsx"
-import Profile from "./pages/member/Profile.jsx"
 import MyProjects from "./pages/manager/MyProjects.jsx"
 import Chats from "./pages/manager/Chats.jsx"
 import Reports from "./pages/manager/Reports.jsx"
@@ -30,6 +29,7 @@ import Teams from "./pages/admin/Teams.jsx"
 import UserManagement from "./pages/admin/UserManagement.jsx"
 import ProjectDetail from "./components/ProjectDetail.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
+import MemberProfile from "./pages/member/MemberProfile.jsx";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -111,7 +111,7 @@ const App = () => {
             <Route path="chat" element={<Chat/>}/>
             <Route path="files" element={<Files/>}/>
             <Route path="calendar" element={<Calendar/>}/>
-            <Route path="profile" element={<Profile/>} />
+            <Route path="profile" element={<MemberProfile/>} />
           </Route>
 
         </Route>

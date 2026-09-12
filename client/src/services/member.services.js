@@ -73,6 +73,15 @@ const deleteFileById = async(id) =>{
     return res?.data;
 }
 
+const getUserDetails = async() =>{
+
+    const res = await axios.get(`${API_URL}/member/profile`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getDashboardStats,
     getTodaysTasks,
@@ -82,4 +91,5 @@ export {
     getInvolvedProjects,
     uploadFileOfMember,
     deleteFileById,
+    getUserDetails,
 }
