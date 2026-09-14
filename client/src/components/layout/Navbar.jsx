@@ -1,5 +1,5 @@
 import { Search, Bell, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { userLogout } from "../../services/auth.services";
 import { useDispatch, useSelector } from "react-redux";
@@ -13,6 +13,21 @@ const Navbar=({ role })=> {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (
+        showDropdown &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target)
+        ) {
+          setShowDropdown(false);
+        }
+      };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showDropdown]);
 
   const handleLogout = async()=>{
     try {
@@ -20,9 +35,9 @@ const Navbar=({ role })=> {
       toast.success(res.data.message)
       dispatch(logout());
       dispatch(deleteOrganisation());
-      
+      navigate('/',{ replace: true});
+
     } catch (error) {
-      navigate('/');
       toast.error(error?.response?.data?.message)
     }
   }
@@ -46,17 +61,27 @@ const Navbar=({ role })=> {
         </button>
         <div
           className="relative"
-          onMouseEnter={()=>setShowDropdown(true)}
-          onMouseLeave={()=>setShowDropdown(false)}
+          ref={modalRef}
            >
           <button
-            className="flex items-center gap-3 hover:bg-gray-50 p-2 pr-3 rounded-xl transition-colors"
+            onClick={()=>setShowDropdown((prev)=>!prev)}
+            className="flex items-center gap-3 hover:bg-gray-100 p-2 pr-3 rounded-xl transition-colors hover:cursor-pointer"
           >
-            <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">
-                {role === "admin" ? "AD" : role === "manager" ? "PM" : "TM"}
-              </span>
-            </div>
+            <div className="w-9 h-9 bg-linear-to-br from-blue-300 via-blue-600 to-purple-700 rounded-full flex items-center justify-center text-white text-xl font-bold overflow-hidden shadow-md border border-gray-300">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>
+                    {user?.name?.split(" ")
+                      .map((n) => n[0].toUpperCase())
+                      .join("")}
+                  </span>
+                )}
+              </div>
             <div className="text-left hidden sm:block">
               <p className="text-sm font-medium text-gray-900">
                 {user?.name}
@@ -68,20 +93,21 @@ const Navbar=({ role })=> {
             <ChevronDown className="w-4 h-4 text-gray-600" />
           </button>
           {showDropdown && (
-            <div className="absolute right-0 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+            <div
+            className="absolute right-0 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 mt-3">
               <Link
+                onClick={()=>setShowDropdown(false)}
                 to={role === "member" ? "/member/profile" : `/${role}/settings`}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 Profile Settings
               </Link>
-              <Link
-                to="/sign-in"
-                onClick={handleLogout}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              <button
+                onClick={()=>{handleLogout(); setShowDropdown(false)}}
+                className="w-full text-start block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:cursor-pointer"
               >
                 Sign Out
-              </Link>
+              </button>
             </div>
           )}
         </div>
