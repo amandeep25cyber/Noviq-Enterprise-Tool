@@ -103,9 +103,9 @@ function KanbanCard({ task, onDragStart }) {
 
 function KanbanColumn({ id, title, color, bgColor, tasks, isOver, onDragOver, onDrop, onDragStart, onAddTask }) {
   return (
-    <div className="flex-1 min-w-72">
+    <div className="flex-1 min-w-72 flex flex-col">
       <div
-        className={`rounded-xl p-4 transition-colors ${isOver ? "bg-blue-50 ring-2 ring-blue-300" : "bg-gray-50"}`}
+        className={`rounded-xl flex-1 p-4 transition-colors ${isOver ? "bg-blue-50 ring-2 ring-blue-300" : "bg-gray-50"}`}
         onDragOver={(e) => { e.preventDefault(); onDragOver(id); }}
         onDrop={(e) => { e.preventDefault(); onDrop(id); }}
       >
@@ -130,9 +130,20 @@ function KanbanColumn({ id, title, color, bgColor, tasks, isOver, onDragOver, on
           {(tasks || []).map((task) => (
             <KanbanCard key={task?._id || task?.id} task={task} onDragStart={onDragStart} />
           ))}
-          {isOver && tasks.length === 0 && (
-            <div className="h-16 rounded-xl border-2 border-dashed border-blue-300 flex items-center justify-center">
-              <p className="text-xs text-blue-500 font-medium">Drop here</p>
+          {(!tasks || tasks.length === 0) && (
+            <div 
+              className={`h-28 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-all mt-3 ${
+                isOver 
+                  ? "border-blue-400 bg-blue-100/50 scale-[1.02]" 
+                  : "border-gray-300 bg-transparent"
+              }`}
+            >
+              <p className={`text-sm font-medium ${isOver ? "text-blue-600" : "text-gray-500"}`}>
+                {isOver ? "Drop task here" : "No tasks yet"}
+              </p>
+              {!isOver && (
+                <p className="text-xs text-gray-400 mt-1">Drag and drop a task</p>
+              )}
             </div>
           )}
         </div>
