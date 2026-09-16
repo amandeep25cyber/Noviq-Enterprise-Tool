@@ -4,6 +4,8 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Task } from "../../models/task.models.js";
 import { User } from "../../models/user.models.js";
 import { Project } from "../../models/project.models.js";
+import { uploadOnCloudinary } from "../../utils/cloudinary.js";
+import { response } from "express";
 
 const userStatsWithDetails = asyncHandler(async(req,res)=>{
     const userId = req.user?._id;
@@ -58,29 +60,36 @@ const userStatsWithDetails = asyncHandler(async(req,res)=>{
 
 const updateUserProfile = asyncHandler(async(req,res)=>{
     const userId = req.user?._id;
-    const orgId = req.user?.organisation;
 
-    const { name, phoneNo, bio } = req.body;
+    let updateData = req.body;
+    const filePathName = req.file?.path;
 
     if(!userId){
         throw new ApiError(401,"Unauthorized user!");
     }
 
-    if(!name){
-        throw new ApiError(402,"Full name is must.");
+    if(!updateData?.name){
+        throw new ApiError(400,"Full name is must.");
+    }
+
+    if(filePathName){
+        const response = await uploadOnCloudinary(filePathName);
+        if(response && response.secure_url){
+            updateData.avatar = response.secure_url;
+        }
     }
 
     const user = await User.findByIdAndUpdate(
         userId,
         {
-            $set:{ name: name, phoneNo: phoneNo, bio: bio}
+            $set: updateData,
         },
         {
             new: true,
             runValidators: true,
         }
     )
-    .select("name phoneNo bio");
+    .select("name phoneNo bio avatar");
 
     if(!user){
         throw new ApiError(500,"Something went wrong while updating profile details.")

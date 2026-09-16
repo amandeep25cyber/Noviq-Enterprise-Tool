@@ -9,11 +9,14 @@ import {
   Briefcase,
   ShieldCheck,
   Edit3,
+  Loader2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { changePassword, getUserDetails, updateUserProfileDetails } from "../../services/member.services";
 import { useDispatch, useSelector } from "react-redux";
 import { updateUserData } from "../../store/features/authSlice";
+import Cropper from "react-easy-crop";
+import { getCroppedImg } from "../../hooks/cropImage.js";
 
 const MemberProfile = () => {
 
@@ -29,6 +32,19 @@ const MemberProfile = () => {
         newPassword: "",
         confirmPassword: "",
     });
+    // --- AVATAR UPLOAD STATES ---
+    const fileInputRef = useRef(null);
+    const [imageSrc, setImageSrc] = useState(null);
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+    
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    
+    // Ye preview URL aur actual file store karega
+    const [avatarFile, setAvatarFile] = useState(null); 
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [editingProfile, setEditingProfile] = useState(false);
 
     useEffect(()=>{
         getUserData();
@@ -67,6 +83,9 @@ const MemberProfile = () => {
             ) {
                 setIsModalOpen(false);
                 setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+                setAvatarFile(null);
+                setAvatarPreview(null);
+                setImageSrc(null);
             }
         };
         document.addEventListener("mousedown", handler);
@@ -74,13 +93,18 @@ const MemberProfile = () => {
     }, [isModalOpen]);
 
     const isSubmitDisabled = () =>{
-        if(activeTab === "general" && formData.name === userData.name && formData.bio === userData.bio && formData.phoneNo === userData.phoneNo){
+        if(activeTab === "general" && formData.name === userData.name && formData.bio === userData.bio && formData.phoneNo === userData.phoneNo && !avatarFile){
             return true;
         }
 
         if(activeTab === "security" && !(formData.confirmPassword && formData.currentPassword && formData.newPassword)){
             return true;
         }
+
+        if(editingProfile){
+          return true;
+        }
+
         return false;
     }
 
@@ -106,18 +130,39 @@ const MemberProfile = () => {
 
     const handleUpdateProfile = async(e) => {
         e.preventDefault();
+        if(isSubmitDisabled()) return;
+        setEditingProfile(true);
         if (activeTab === "general") {
             try {
-                const res = await updateUserProfileDetails({
-                    name: formData.name,
-                    phoneNo: formData.phoneNo,
-                    bio: formData.bio,
-                });
+                const formDataToSend = new FormData();
 
-                dispatch(updateUserData({...user, name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio}));
-                setUserData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
-                setFormData(prev=>({...prev,name: res?.data?.name, phoneNo: res?.data?.phoneNo, bio: res?.data?.bio }));
+                formDataToSend.append("name",formData?.name);
+                formDataToSend.append("phoneNo",formData?.phoneNo);
+                formDataToSend.append("bio",formData?.bio);
+
+                if(avatarFile){
+                  formDataToSend.append("avatar",avatarFile);
+                }
+
+                const res = await updateUserProfileDetails(formDataToSend);
+
+                const updatedData = {
+                  name: res?.data?.name,
+                  phoneNo: res?.data?.phoneNo, 
+                  bio: res?.data?.bio
+                }
+
+                if(avatarFile){
+                  updatedData.avatar = res?.data?.avatar;
+                }
+
+                dispatch(updateUserData({...user, ...updatedData}));
+                setUserData(prev=>({...prev, ...updatedData }));
+                setFormData(prev=>({...prev, ...updatedData }));
                 toast.success("Profile Updated!");
+                setImageSrc(null);
+                setAvatarFile(null);
+                setAvatarPreview(null);
                 setIsModalOpen(false);
 
             } catch (error) {
@@ -125,8 +170,6 @@ const MemberProfile = () => {
                 console.log(error?.response?.data?.message);
             }
         } else {
-            console.log("Updating Password via API...", formData);
-            // TODO: Call PUT /api/users/change-password
             if(formData.newPassword !== formData.confirmPassword){
                 toast.error("New Password does not match with Confirm Password.");
             }
@@ -140,6 +183,42 @@ const MemberProfile = () => {
                 toast.error(error?.response?.data?.message);
                 console.log(error?.response?.data?.message);
             }
+        }
+        setEditingProfile(false);
+    };
+
+    const onFileChange = async (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          let imageDataUrl = await readFile(file);
+          setImageSrc(imageDataUrl);
+          setIsCropModalOpen(true);
+          e.target.value = null;
+        }
+    };
+
+    const readFile = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => resolve(reader.result), false);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const onCropComplete = (croppedArea, croppedAreaPixels) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleCropSave = async () => {
+        try {
+            const { file, url } = await getCroppedImg(imageSrc, croppedAreaPixels);
+            setAvatarPreview(url);
+            setAvatarFile(file);
+
+            setIsCropModalOpen(false);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to crop image");
         }
     };
 
@@ -362,6 +441,9 @@ const MemberProfile = () => {
                 onClick={() => {
                     setIsModalOpen(false); 
                     setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+                    setAvatarFile(null);
+                    setAvatarPreview(null);
+                    setImageSrc(null);
                 }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -392,21 +474,42 @@ const MemberProfile = () => {
                 <div className="space-y-5">
                   {/* Avatar Upload UI */}
                   <div className="flex items-center gap-4 mb-2">
-                    <div className="relative w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                      <UserIcon size={30} />
+                    <div className="relative w-16 h-16">
+                      <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center text-blue-600 overflow-hidden border border-gray-200">
+                        {avatarPreview || userData?.avatar ? (
+                          <img
+                            src={avatarPreview || userData?.avatar}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UserIcon size={30} />
+                        )}
+                      </div>
+
+                      {/* Hidden File Input */}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={onFileChange}
+                        accept="image/png, image/jpeg, image/jpg"
+                        className="hidden"
+                      />
+
+    
                       <button
                         type="button"
-                        className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-full border border-gray-200 shadow-sm text-gray-600 hover:text-blue-600"
+                        onClick={() => fileInputRef.current.click()}
+                        className="absolute -bottom-1 -right-1 z-10 bg-white p-1.5 rounded-full border border-gray-200 shadow-sm text-gray-600 hover:text-blue-600 hover:cursor-pointer transition-colors"
                       >
                         <Camera size={14} />
                       </button>
                     </div>
+
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Profile Picture
-                      </p>
+                      <p className="text-sm font-semibold text-gray-900">Profile Picture</p>
                       <p className="text-xs text-gray-500">
-                        JPG, GIF or PNG. Max size of 2MB.
+                        JPG or PNG. You can crop it before uploading.
                       </p>
                     </div>
                   </div>
@@ -512,20 +615,93 @@ const MemberProfile = () => {
                   onClick={() =>{ 
                     setIsModalOpen(false);
                     setFormData({name: userData?.name, phoneNo: userData?.phoneNo, bio: userData?.bio, currentPassword: "", newPassword: "", confirmPassword: "", });
+                    setAvatarFile(null);
+                    setAvatarPreview(null);
+                    setImageSrc(null);
                 }}
-                  className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                  className="px-5 hover:cursor-pointer py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled ={isSubmitDisabled()}
-                  className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm disabled:opacity-40"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm disabled:opacity-60 hover:cursor-pointer"
                 >
-                  Save Changes
+                  {
+                    editingProfile ? 
+                    <>
+                      <Loader2 className="animate-spin mx-auto"/>
+                    </> : 
+                    <>Save Changes</>
+                  }
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* =========================================================================
+          CROP IMAGE MODAL (WhatsApp Style)
+      ========================================================================= */}
+      {isCropModalOpen && (
+        <div 
+          ref={modalRef}
+          className="fixed inset-0 z-60 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col h-125">
+            <div className="flex justify-between items-center p-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Crop Avatar</h2>
+              <button onClick={() => setIsCropModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="relative flex-1 bg-gray-900">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            {/* Zoom Slider & Actions */}
+            <div className="p-4 bg-white border-t border-gray-100">
+               <div className="mb-4 flex items-center gap-3">
+                 <span className="text-xs font-medium text-gray-500">Zoom</span>
+                 <input
+                    type="range"
+                    value={zoom}
+                    min={1}
+                    max={3}
+                    step={0.1}
+                    aria-labelledby="Zoom"
+                    onChange={(e) => setZoom(e.target.value)}
+                    className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+               </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCropModalOpen(false)}
+                  className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCropSave}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm"
+                >
+                  Apply Crop
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

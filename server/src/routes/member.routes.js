@@ -18,7 +18,7 @@ router.route('/projects').get(verifyUser,isMember,getUserInvolvedProjects);
 router.route('/file').post(verifyUser,isMember,upload.single("file"),uploadFileforMemberController);
 router.route('/file/:fileId').delete(verifyUser,isMember,deleteFile);
 router.route('/profile').get(verifyUser,isMember,userStatsWithDetails);
-router.route('/profile').put(verifyUser,isMember,updateUserProfile);
+router.route('/profile').put(verifyUser,isMember,upload.single("avatar"),updateUserProfile);
 router.route('/password').put(verifyUser,isMember,changePasswordController);
 
 export default router;
