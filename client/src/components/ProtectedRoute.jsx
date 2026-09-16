@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useSelector } from "react-redux";
+import ScreenLoader from "./layout/ScreenLoader.jsx";
 
 const ProtectedRoute = () => {
   const { isLoggedIn, loading } = useSelector(
@@ -7,7 +8,7 @@ const ProtectedRoute = () => {
   );
 
   if(loading){
-    return <h1>loading...</h1>
+    return <ScreenLoader />
   }
 
   return isLoggedIn

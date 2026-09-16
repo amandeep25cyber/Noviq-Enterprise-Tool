@@ -171,7 +171,7 @@ const MyProjects = ()=> {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">My Projects</h1>
-          <p className="text-gray-600">{projects.length} projects · {projects.filter(p => p.status === "In Progress").length} active</p>
+          <p className="text-gray-600">{projects?.length} projects · {projects?.filter(p => p.status === "In Progress")?.length} active</p>
         </div>
         <button
           onClick={openCreate}
@@ -185,13 +185,13 @@ const MyProjects = ()=> {
       {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total", value: projects.length, color: "bg-gray-50 border-gray-100", text: "text-gray-900" },
-          { label: "In Progress", value: projects.filter(p => p.status === "In Progress").length, color: "bg-blue-50 border-blue-100", text: "text-blue-700" },
-          { label: "Completed", value: projects.filter(p => p.status === "Completed").length, color: "bg-emerald-50 border-emerald-100", text: "text-emerald-700" },
-          { label: "Planning", value: projects.filter(p => p.status === "Planning").length, color: "bg-amber-50 border-amber-100", text: "text-amber-700" },
+          { label: "Total", value: projects?.length, color: "bg-gray-50 border-gray-100", text: "text-gray-900" },
+          { label: "In Progress", value: projects?.filter(p => p.status === "In Progress")?.length, color: "bg-blue-50 border-blue-100", text: "text-blue-700" },
+          { label: "Completed", value: projects?.filter(p => p.status === "Completed")?.length, color: "bg-emerald-50 border-emerald-100", text: "text-emerald-700" },
+          { label: "Planning", value: projects?.filter(p => p.status === "Planning")?.length, color: "bg-amber-50 border-amber-100", text: "text-amber-700" },
         ].map((s) => (
           <div key={s.label} className={`p-4 rounded-xl border ${s.color}`}>
-            <p className={`text-2xl font-bold ${s.text}`}>{s.value}</p>
+            <p className={`text-2xl font-bold ${s.text}`}>{s?.value}</p>
             <p className="text-xs text-gray-500 mt-0.5 font-medium">{s.label}</p>
           </div>
         ))}
@@ -214,7 +214,7 @@ const MyProjects = ()=> {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {filtered?.length === 0 && (
         <div className="text-center py-14 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
           <FolderKanban className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">No {statusFilter !== "All Status" ? statusFilter.toLowerCase() : ""} projects</p>
@@ -225,7 +225,7 @@ const MyProjects = ()=> {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filtered.map((project, idx) => (
+        {filtered?.map((project, idx) => (
           <Card key={project._id || idx}>
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
