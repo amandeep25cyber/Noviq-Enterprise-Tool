@@ -4,8 +4,9 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { Task } from "../../models/task.models.js";
 import { User } from "../../models/user.models.js";
 import { Project } from "../../models/project.models.js";
-import { uploadOnCloudinary } from "../../utils/cloudinary.js";
-import { response } from "express";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../../utils/cloudinary.js";
+import fs from "fs";
+
 
 const userStatsWithDetails = asyncHandler(async(req,res)=>{
     const userId = req.user?._id;
@@ -65,17 +66,34 @@ const updateUserProfile = asyncHandler(async(req,res)=>{
     const filePathName = req.file?.path;
 
     if(!userId){
+        if(filePathName) fs.unlinkSync(filePathName);
         throw new ApiError(401,"Unauthorized user!");
     }
 
     if(!updateData?.name){
+        if(filePathName) fs.unlinkSync(filePathName);
         throw new ApiError(400,"Full name is must.");
+    }
+
+    const existedUser = await User.findById(userId);
+
+    if(!existedUser){
+        if(filePathName) fs.unlinkSync(filePathName);
+        throw new ApiError(401,"User does not exists.");
     }
 
     if(filePathName){
         const response = await uploadOnCloudinary(filePathName);
         if(response && response.secure_url){
             updateData.avatar = response.secure_url;
+            if (existedUser.avatar) {
+                try {
+                    const publicId = existedUser.avatar.split('/').at(-1).split('.')[0];
+                    await deleteFromCloudinary(publicId, "image");
+                } catch (error) {
+                    console.log("Error deleting old avatar from cloudinary:", error);
+                }
+            }
         }
     }
 
