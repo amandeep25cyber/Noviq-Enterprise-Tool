@@ -19,7 +19,7 @@ function KanbanCard({ task, onDragStart }) {
 
   const role = useSelector(state=>state.auth.user.role);
 
-  const displayUser = role === "member" ? task.createdBy : task.assignedTo;
+  const { displayUser, avatar } = role === "member" ? { displayUser: task.createdBy, avatar: task.createdBy?.avatar } : { displayUser: task.assignedTo, avatar: task.assignedTo?.avatar };
 
   const colorIdx = displayUser?.name
     ? displayUser.name.charCodeAt(0) % avatarColors.length
@@ -89,11 +89,14 @@ function KanbanCard({ task, onDragStart }) {
         {displayUser?.name && (
           <div
             title={role === "member" ? `Assigned by: ${displayUser.name}` : `Assigned to: ${displayUser.name}`}
-            className={`w-8 h-8 bg-linear-to-br ${avatarColors[colorIdx]} rounded-full flex items-center justify-center shrink-0 shadow-sm ring-2 ring-white`}
+            className={`w-8 h-8 bg-linear-to-br ${avatarColors[colorIdx]} rounded-full flex items-center justify-center shrink-0 ring-2 ring-white overflow-hidden shadow-2xl border border-gray-200 z-999`}
           >
-            <span className="text-white text-xs font-bold tracking-wide">
-              {displayUser.name.substring(0, 2).toUpperCase()}
-            </span>
+            {
+              avatar ?
+              <img src={avatar} alt="Member Logo" /> : 
+              <span className="text-white text-xs font-bold tracking-wide">{displayUser?.name.slice(0,2).toUpperCase()}</span>
+            }
+            
           </div>
         )}
       </div>

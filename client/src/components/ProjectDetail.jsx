@@ -391,8 +391,13 @@ const ProjectDetail = ({ role }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {projectData.team.map((member,idx) => (
                     <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                      <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center shrink-0">
-                        <span className="text-white font-semibold text-sm">{member.avatar || member.name.slice(0,2).toUpperCase()}</span>
+                      <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-2xl border-2 border-gray-400">
+                        {
+                          member.avatar ?
+                           <img src={member.avatar} alt="Member Logo" /> : 
+                           <span className="text-white font-semibold text-sm">{member.name.slice(0,2).toUpperCase()}</span>
+                        }
+                        
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{member.name}</p>
