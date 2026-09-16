@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/AsyncHandler.js"
 import { ApiResponse } from "../../utils/ApiResponse.js"
 import { Project } from "../../models/project.models.js";
 import { Task } from "../../models/task.models.js";
+import { File } from "../../models/file.models.js";
 
 const createNewUser = asyncHandler(async(req,res)=>{
 
@@ -542,6 +543,26 @@ const deleteTask = asyncHandler(async (req, res) => {
     );
 });
 
+const getFilesController = asyncHandler(async (req, res)=>{
+
+    const orgId = req.user?.organisation;
+    const project = req.params?.projectId;
+    
+    const files = await File.find({
+        project,
+        organisation: orgId
+    })
+    .select("fileName fileUrl uploadedBy fileType createdAt size")
+    .populate("uploadedBy","name avatar")
+    .lean();
+    
+    res
+    .status(200)
+    .json(
+        new ApiResponse( 200, files, "Fetched Successfully")
+    )
+})
+
 export {
     createNewUser,
     getAllUser,
@@ -557,4 +578,5 @@ export {
     createTask,
     updateTaskStatus,
     deleteTask,
+    getFilesController,
 }

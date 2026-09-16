@@ -99,6 +99,14 @@ const createNewTask = async(data) =>{
     return res?.data;
 }
 
+const getFilesOfProject = async( id ) =>{
+    const res = await axios.get(`${apiUrl}/organisation/file/${id}`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getUsers,
     getTeamPerformance,
@@ -112,4 +120,5 @@ export {
     getSingleProject,
     taskStatusUpdate,
     createNewTask,
+    getFilesOfProject,
 }
