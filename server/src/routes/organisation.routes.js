@@ -1,7 +1,7 @@
 import {Router} from "express";
 import { verifyUser } from "../middlewares/verifyJWT.js"
 import { isAdmin } from "../middlewares/isAdmin.js"
-import { createNewUser, createProject, createTask, deleteProject, deleteTask, getAllUser, getDashboardStats, getDashboardTeamPerformance, getFilesController, getOrgUsers, getProjects, getProjectsStat, getSingleProject, updateProject, updateTaskStatus, uploadProjectFileController } from "../controllers/organisation/user.organisation.js";
+import { createNewUser, createProject, createTask, deleteProject, deleteSingleProjectFile, deleteTask, getAllUser, getDashboardStats, getDashboardTeamPerformance, getFilesController, getOrgUsers, getProjects, getProjectsStat, getSingleProject, updateProject, updateTaskStatus, uploadProjectFileController } from "../controllers/organisation/user.organisation.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
@@ -22,5 +22,6 @@ router.route('/task/:taskId/status').put(verifyUser,isAdmin,updateTaskStatus);
 router.route('/task/:taskId').delete(verifyUser,isAdmin,deleteTask);
 router.route('/file/:projectId').get(verifyUser,isAdmin,getFilesController);
 router.route('/file').post(verifyUser,isAdmin,upload.single("file"),uploadProjectFileController);
+router.route('/file/:fileId').delete(verifyUser,isAdmin,deleteSingleProjectFile);
 
 export default router;

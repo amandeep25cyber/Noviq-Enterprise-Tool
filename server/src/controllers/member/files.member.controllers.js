@@ -83,7 +83,9 @@ const uploadFileforMemberController = asyncHandler(async(req,res)=>{
         throw new ApiError(403,"Project doesn't exists.")
     }
 
-    const response = await uploadOnCloudinary(filePathName);
+    const resourceType = (fileType === 'image' || fileType === 'design') ? 'image' : 'raw';
+
+    const response = await uploadOnCloudinary(filePathName, resourceType);
 
     if(!response){
         throw new ApiError(500,"Something went wrong while uploading to Cloudinary.")
@@ -107,7 +109,7 @@ const uploadFileforMemberController = asyncHandler(async(req,res)=>{
         throw new ApiError(500,"Something went wrong with database.");
     }
 
-    const createdFile = await File.findById(file?._id).select("fileName uploadedBy fileUrl fileType createdAt size").populate("uploadedBy","name avatar").lean();
+    const createdFile = await File.findById(file?._id).select("fileName uploadedBy fileUrl project fileType createdAt size").populate("uploadedBy","name avatar").populate("project","title").lean();
 
     res
     .status(201)

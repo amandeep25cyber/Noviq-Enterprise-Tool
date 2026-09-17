@@ -83,7 +83,7 @@ const updateUserProfile = asyncHandler(async(req,res)=>{
     }
 
     if(filePathName){
-        const response = await uploadOnCloudinary(filePathName);
+        const response = await uploadOnCloudinary(filePathName, 'image');
         if(response && response.secure_url){
             updateData.avatar = response.secure_url;
             if (existedUser.avatar) {

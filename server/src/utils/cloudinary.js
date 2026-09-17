@@ -7,9 +7,11 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 })
 
-const uploadOnCloudinary = async(fileName) =>{
+const uploadOnCloudinary = async(fileName, rType = "auto") =>{
     try {
-        const response = await cloudinary.uploader.upload(fileName);
+        const response = await cloudinary.uploader.upload(fileName,{
+            resource_type: rType,
+        });
         fs.unlinkSync(fileName);
         return response;
     } catch (error) {

@@ -343,8 +343,10 @@ const uploadFileController = asyncHandler(async(req,res)=>{
         fs.unlinkSync(filePathName);
         throw new ApiError(403,"Project doesn't exists.")
     }
+    
+    const resourceType = (fileType === 'image' || fileType === 'design') ? 'image' : 'raw';
 
-    const response = await uploadOnCloudinary(filePathName);
+    const response = await uploadOnCloudinary(filePathName, resourceType);
 
     if(!response){
         throw new ApiError(500,"Something went wrong while uploading to Cloudinary.")

@@ -115,6 +115,12 @@ const uploadProjectFile = async (data) =>{
     return res?.data;
 }
 
+const deleteSingleFile = async(id) =>{
+    await axios.delete(`${apiUrl}/organisation/file/${id}`,{
+        withCredentials: true,
+    })
+}
+
 export {
     getUsers,
     getTeamPerformance,
@@ -130,4 +136,5 @@ export {
     createNewTask,
     getFilesOfProject,
     uploadProjectFile,
+    deleteSingleFile,
 }

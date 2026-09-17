@@ -595,7 +595,9 @@ const uploadProjectFileController = asyncHandler(async(req,res)=>{
         throw new ApiError(403,"Project doesn't exists.")
     }
 
-    const response = await uploadOnCloudinary(filePathName);
+    const resourceType = (fileType === 'image' || fileType === 'design') ? 'image' : 'raw';
+
+    const response = await uploadOnCloudinary(filePathName, resourceType);
 
     if(!response){
         throw new ApiError(500,"Something went wrong while uploading to Cloudinary.")
@@ -628,6 +630,34 @@ const uploadProjectFileController = asyncHandler(async(req,res)=>{
 
 })
 
+const deleteSingleProjectFile = asyncHandler(async(req,res)=>{
+    const { fileId } = req.params;
+
+    const file = await File.findById(fileId).populate("project").select("resourceType project publicId");
+
+    if(!file){
+        throw new ApiError(404,"File doesn't exists!");
+    }
+
+    try {
+        await deleteFromCloudinary(file.publicId, file.resourceType || "image");
+    } catch (error) {
+        console.log(error)
+    }
+   
+    const deletedFile = await File.findByIdAndDelete(fileId);
+
+    if(!deletedFile){
+        throw new ApiError(500,"Something went wrong while deleting file from database.")
+    }
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200, {}, "File deleted successfully!")
+    )
+})
+
 export {
     createNewUser,
     getAllUser,
@@ -645,4 +675,5 @@ export {
     deleteTask,
     getFilesController,
     uploadProjectFileController,
+    deleteSingleProjectFile,
 }

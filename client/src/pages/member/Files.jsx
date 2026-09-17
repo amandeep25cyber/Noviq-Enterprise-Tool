@@ -104,6 +104,7 @@ const Files = ({ role })=> {
   }
 
   const deleteFile = async(id) => {
+    if(isDeleting) return ;
     setIsDeleting(true);
     try {
       await deleteFileById(id);
@@ -118,7 +119,8 @@ const Files = ({ role })=> {
   };
 
   const addFile = async() => {
-    if (!fileName.trim() || !file) return;
+    
+    if (!fileName.trim() || !file || isUploading) return;
     try {
       setIsUploading(true);
       const formData = new FormData()
@@ -318,10 +320,12 @@ const Files = ({ role })=> {
                     <h4 className="font-medium text-gray-900 text-sm mb-1 truncate">{file.fileName}</h4>
                     <p className="text-xs text-gray-500 mb-2">{formatBytes(file.size)}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-400">
-                      <div className="w-6 h-6 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center">
-                        <span 
-                         title={`Uploaded By: ${file.uploadedBy?.name}`}
-                         className="text-white text-[9px] font-bold">{file.uploadedBy?.name?.substring(0, 2).toUpperCase()}</span>
+                      <div className="w-6 h-6 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center overflow-hidden border shadow-sm border-gray-300">
+                        {
+                          file.uploadedBy?.avatar ?
+                          <img src={file.uploadedBy?.avatar} alt="Uploader Image"/>:
+                          <span className="text-white text-[7px] font-bold">{file.uploadedBy?.name?.trim()?.split(/\s+/)?.map(word=>word[0])?.join("")?.toUpperCase()}</span>
+                        }
                       </div>
                       {getRelativeTime(file.createdAt)}
                     </div>

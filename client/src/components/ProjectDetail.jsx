@@ -1,10 +1,10 @@
 import { Card } from "./ui/Card";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Upload, MessageSquare, FileText, CheckSquare, Settings, Send, Download, Share2, Plus, X, Image, File, Trash2, Search, Grid3x3, List, MoreVertical } from "lucide-react";
+import { ArrowLeft, Upload, MessageSquare, FileText, CheckSquare, Settings, Send, Download, Share2, Plus, X, Image, File, Trash2, Search, Grid3x3, List, MoreVertical, Loader2, Loader } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { KanbanBoard } from "./ui/KanbanBoard";
 import { toast } from "react-toastify";
-import { createNewTask, getFilesOfProject, getSingleProject, taskStatusUpdate, uploadProjectFile } from "../services/organisation.services";
+import { createNewTask, deleteSingleFile, getFilesOfProject, getSingleProject, taskStatusUpdate, uploadProjectFile } from "../services/organisation.services";
 import { createNewTaskByManager, deleteProjectFileById, getProjectDataById, getProjectFiles, updateTaskStatus, uploadFile } from "../services/manager.services";
 import { getRelativeTime } from "../hooks/relativeTime";
 import { formatBytes } from "../hooks/parseBytesData";
@@ -95,11 +95,27 @@ const ProjectDetail = ({ role }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [newTask,setNewTask] = useState(DEFAULT_TASK);
   const basePath = `/${role}`;
+  const modalRef = useRef(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(()=>{
     getProjectData();
     getProjectFilesData();
   },[])
+
+  useEffect(()=>{
+    const handler = (e) => {
+      if (
+        showActions &&
+        modalRef.current &&
+        !modalRef.current.contains(e.target)
+      ) {
+        setShowActions(false);
+        }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  },[showActions])
 
   const filtered = files.filter((f) => {
     const matchSearch = f.uploadedBy?.name?.toLowerCase().includes(search.toLowerCase()) || f.fileName?.toLowerCase().includes(search.toLowerCase());
@@ -143,17 +159,22 @@ const ProjectDetail = ({ role }) => {
   }
 
   const handleFileDelete = async(id) =>{
+    if(isDeleting) return ;
+    setIsDeleting(true);
     try {
-      await deleteProjectFileById(id);
+      if(role === "manager") await deleteProjectFileById(id);
+      else await deleteSingleFile(id);
       setFiles((prevFiles)=>
         prevFiles.filter(file=>file._id !== id)
       );
+      setShowActions(false);
       toast.success("File deleted successfully!");
 
     } catch (error) {
       toast.error(error?.response?.data?.message);
       console.log(error?.response?.data?.message);
     }
+    setIsDeleting(false);
   }
 
   const getFileDownloadUrl = (url,fileName) =>{
@@ -229,6 +250,7 @@ const ProjectDetail = ({ role }) => {
   }
 
   const addFile = async() =>{
+    if(isUploading) return; 
     try {
       setIsUploading(true);
       const formData = new FormData()
@@ -588,7 +610,7 @@ const ProjectDetail = ({ role }) => {
                                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${typeColor[file.fileType]}`}>
                                   <Icon className="w-6 h-6" />
                                 </div>
-                                <div className="relative">
+                                <div className="relative" ref={showActions === file._id ? modalRef : undefined}>
                                   <button
                                     onClick={() => setShowActions(showActions === file._id ? null : file._id)}
                                     className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
@@ -614,10 +636,19 @@ const ProjectDetail = ({ role }) => {
                                         <>
                                           <div className="my-1 border-t border-gray-100" />
                                           <button
-                                            onClick={() =>{ handleFileDelete(file._id); setShowActions(null);}}
-                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                            onClick={() =>{ handleFileDelete(file._id)}}
+                                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-all"
                                           >
-                                            <Trash2 className="w-4 h-4" /> Delete
+                                            {
+                                              isDeleting ? 
+                                              <>
+                                                <Loader2 className="animate-spin w-4 h-4 " />
+                                                Deleting...
+                                              </>:
+                                              <>
+                                                <Trash2 className="w-4 h-4" /> Delete
+                                              </>
+                                            }
                                           </button>
                                         </>
                                       )}
@@ -630,8 +661,12 @@ const ProjectDetail = ({ role }) => {
                               <div className="flex items-center gap-2 text-xs text-gray-400">
                                 <div 
                                 title={`Uploaded By: ${file.uploadedBy?.name}`}
-                                className="w-4 h-4 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-[7px] font-bold">{file.uploadedBy?.name?.substring(0, 2).toUpperCase()}</span>
+                                className="w-6 h-6 bg-linear-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center border border-gray-300 shadow-sm overflow-hidden">
+                                  {
+                                    file.uploadedBy?.avatar ?
+                                    <img src={file.uploadedBy?.avatar} alt="Uploader Image"/>:
+                                    <span className="text-white text-sm font-bold">{file.uploadedBy?.name?.trim()?.split(/\s+/)?.map(word=>word[0])?.join("")?.toUpperCase() || "U"}</span>
+                                  }
                                 </div>
                                   { getRelativeTime(file.createdAt) }
                               </div>
@@ -670,9 +705,11 @@ const ProjectDetail = ({ role }) => {
                                 {(role === "admin" || role === "manager") && (
                                   <button
                                     onClick={() => handleFileDelete(file._id)}
-                                    className="p-1.5 hover:bg-red-100 rounded-lg transition-colors"
+                                    className="p-1.5 hover:bg-red-100 rounded-lg transition-all"
                                   >
-                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                    {
+                                      isDeleting ? <Loader2 className="w-4 h-4 text-red-500 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-500" />
+                                    }
                                   </button>
                                 )}
                               </div>
@@ -763,7 +800,7 @@ const ProjectDetail = ({ role }) => {
                 disabled={!fileName.trim() || !file}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
               >
-                {isUploading ? "Uploading...": "Upload"}
+                {isUploading ? (<> <Loader className="w-5 mx-auto text-white h-5 animate-spin"/></>): "Upload"}
               </button>
             </div>
           </div>
