@@ -4,7 +4,7 @@ import { ArrowLeft, Upload, MessageSquare, FileText, CheckSquare, Settings, Send
 import { useState, useRef, useEffect } from "react";
 import { KanbanBoard } from "./ui/KanbanBoard";
 import { toast } from "react-toastify";
-import { createNewTask, getFilesOfProject, getSingleProject, taskStatusUpdate } from "../services/organisation.services";
+import { createNewTask, getFilesOfProject, getSingleProject, taskStatusUpdate, uploadProjectFile } from "../services/organisation.services";
 import { createNewTaskByManager, deleteProjectFileById, getProjectDataById, getProjectFiles, updateTaskStatus, uploadFile } from "../services/manager.services";
 import { getRelativeTime } from "../hooks/relativeTime";
 import { formatBytes } from "../hooks/parseBytesData";
@@ -179,7 +179,7 @@ const ProjectDetail = ({ role }) => {
 
   const getProjectFilesData = async ()=>{
     try {
-      
+
       let response = {};
       if(role === "manager") response = await getProjectFiles(id);
       else response = await getFilesOfProject(id);
@@ -237,7 +237,10 @@ const ProjectDetail = ({ role }) => {
       formData.append("fileType", fileType);
       formData.append("project", id);
 
-      const res = await uploadFile( formData );
+      let res = {} ;
+
+      if(role === "manager") res = await uploadFile( formData );
+      else res = await uploadProjectFile( formData );
 
       setFiles((prev)=>[...prev,res?.data]);
       

@@ -107,6 +107,14 @@ const getFilesOfProject = async( id ) =>{
     return res?.data;
 }
 
+const uploadProjectFile = async (data) =>{
+    const res = await axios.post(`${apiUrl}/organisation/file`,data,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
 export {
     getUsers,
     getTeamPerformance,
@@ -121,4 +129,5 @@ export {
     taskStatusUpdate,
     createNewTask,
     getFilesOfProject,
+    uploadProjectFile,
 }
