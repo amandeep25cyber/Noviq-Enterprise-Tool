@@ -425,7 +425,9 @@ const Files = ({ role })=> {
                   {file ? file.name : "Click to browse or drag file here"}
                 </p>
       
-                <p className="text-xs text-gray-400 mt-1">Max 50 MB per file</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {file ? formatBytes(file.size) : "Max 10 MB per file"}
+                </p>
               </label>
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1.5">File Name</label>
