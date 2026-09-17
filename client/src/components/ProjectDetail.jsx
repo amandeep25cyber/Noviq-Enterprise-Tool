@@ -296,7 +296,7 @@ const ProjectDetail = ({ role }) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       setFile(e.dataTransfer.files[0]);
-      console.log(e.dataTransfer.files);
+      setFileName(e.dataTransfer.files[0]?.name);
     }
   };
 
@@ -731,7 +731,7 @@ const ProjectDetail = ({ role }) => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-semibold text-gray-900">Upload File</h3>
-              <button onClick={() => setShowUpload(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+              <button onClick={() =>{setFile(null); setFileName(""); setFileType("document") ; setShowUpload(false)}} className="p-1.5 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
@@ -752,6 +752,7 @@ const ProjectDetail = ({ role }) => {
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       setFile(e.target.files[0]);
+                      setFileName(e.target.files[0]?.name);
                     }
                   }} 
                 />
@@ -792,7 +793,7 @@ const ProjectDetail = ({ role }) => {
             </div>
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => setShowUpload(false)}
+                onClick={() => {setFile(null); setFileName(""); setFileType("document") ; setShowUpload(false)}}
                 className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Cancel
