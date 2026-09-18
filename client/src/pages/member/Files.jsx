@@ -82,20 +82,35 @@ const Files = ({ role })=> {
     }
   }
 
-  const getFileDownloadUrl = (url,fileName) =>{
-    if(!url) return "";
-    const replacedValue = "/upload/";
-    const safeFileName = fileName 
-        ? fileName.split('.')[0].replace(/[^a-zA-Z0-9_-]/g, "") 
-        : "";
+  const forceDownload = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const localUrl = window.URL.createObjectURL(blob);
+    
+      const urlExtension = fileUrl.split('.').pop().toLowerCase();
+      const finalFileName = fileName.toLowerCase().includes(`.${urlExtension}`) 
+        ? fileName 
+        : `${fileName}.${urlExtension}`;
 
-    return url.replace(replacedValue,`${replacedValue}fl_attachment${safeFileName? `:${safeFileName}/` :"/"}`);
-  }
+      const link = document.createElement('a');
+      link.href = localUrl;
+      link.download = finalFileName;
+    
+      document.body.appendChild(link);
+      link.click();
+    
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(localUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
 
   const handleShare = async (fileUrl) => {
     try {
         await navigator.clipboard.writeText(fileUrl);
-        
+        setShowActions(false);
         toast.success("Link copied to clipboard!"); 
     } catch (error) {
         console.error("Failed to copy:", error);
@@ -291,13 +306,15 @@ const Files = ({ role })=> {
                         </button>
                         {showActions === file._id && (
                           <div className="absolute right-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 z-10">
-                            <a
-                              href={`${getFileDownloadUrl(file.fileUrl, file.fileName)}`}
-                              onClick={() => { setShowActions(null);}}
+                            <button
+                              onClick={() => { 
+                                setShowActions(null); 
+                                forceDownload(file.fileUrl, file.fileName);
+                              }}
                               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                             >
                               <Download className="w-4 h-4" /> Download
-                            </a>
+                            </button>
                             <button
                               onClick={() => { handleShare(file.fileUrl);}}
                               className="w-full hover:cursor-pointer px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
@@ -369,12 +386,12 @@ const Files = ({ role })=> {
                     <span className="text-xs text-gray-400 hidden sm:block">{typeLabels[file.fileType]}</span>
                     <span className="text-sm text-gray-500 w-16 text-right">{formatBytes(file.size)}</span>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <a
-                        href={`${getFileDownloadUrl(file.fileUrl, file.fileName)}`}
+                      <button
+                        onClick={()=>forceDownload(file.fileUrl, file.fileName)}
                         className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         <Download className="w-4 h-4 text-gray-600" />
-                      </a>
+                      </button>
                       <button
                         onClick={()=> handleShare(file.fileUrl)}
                         className="p-1.5 hover:cursor-pointer hover:bg-gray-200 rounded-lg transition-colors"

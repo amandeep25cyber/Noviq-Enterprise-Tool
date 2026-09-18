@@ -83,7 +83,9 @@ const uploadFileforMemberController = asyncHandler(async(req,res)=>{
         throw new ApiError(403,"Project doesn't exists.")
     }
 
-    const resourceType = (fileType === 'image' || fileType === 'design') ? 'image' : 'raw';
+    const isPdf = fileName.toLowerCase().endsWith('.pdf') || req.file?.originalname.toLowerCase().endsWith('.pdf');
+
+    const resourceType = isPdf ? 'image' : (fileType === 'image' || fileType === 'design' ? 'image' : 'raw');
 
     const response = await uploadOnCloudinary(filePathName, resourceType);
 
