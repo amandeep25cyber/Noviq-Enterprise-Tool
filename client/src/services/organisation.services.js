@@ -121,6 +121,22 @@ const deleteSingleFile = async(id) =>{
     })
 }
 
+const getTeamsData = async() =>{
+    const res = await axios.get(`${apiUrl}/organisation/teams`,{
+        withCredentials: true,
+    })
+
+    return res?.data;
+}
+
+const updateJobRoleOfUser = async(id,jobRole) =>{
+    const res = await axios.put(`${apiUrl}/organisation/teams/${id}`,{jobRole},{
+        withCredentials: true
+    })
+
+    return res?.data;
+}
+
 export {
     getUsers,
     getTeamPerformance,
@@ -137,4 +153,6 @@ export {
     getFilesOfProject,
     uploadProjectFile,
     deleteSingleFile,
+    getTeamsData,
+    updateJobRoleOfUser,
 }

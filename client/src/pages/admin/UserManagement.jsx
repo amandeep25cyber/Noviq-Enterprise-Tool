@@ -6,17 +6,7 @@ import { createUser, getUsers } from "../../services/organisation.services.js"
 import { useDispatch, useSelector } from "react-redux";
 import { storeUsers, addUsers } from "../../store/features/orgSlice.js";
 import { formatDistanceToNow } from 'date-fns'
-import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
-const userData = [
-  { id: 1, name: "Sarah Johnson", email: "sarah.j@company.com", role: "Admin", status: "Active", lastActive: "2 hours ago" },
-  { id: 2, name: "Mike Chen", email: "mike.c@company.com", role: "Project Manager", status: "Active", lastActive: "1 hour ago" },
-  { id: 3, name: "Emily Davis", email: "emily.d@company.com", role: "Team Member", status: "Active", lastActive: "5 minutes ago" },
-  { id: 4, name: "John Smith", email: "john.s@company.com", role: "Team Member", status: "Inactive", lastActive: "3 days ago" },
-  { id: 5, name: "Lisa Wong", email: "lisa.w@company.com", role: "Project Manager", status: "Active", lastActive: "30 minutes ago" },
-  { id: 6, name: "David Miller", email: "david.m@company.com", role: "Team Member", status: "Active", lastActive: "1 day ago" },
-];
 
 const UserManagement = ()=> {
   const [showActions, setShowActions] = useState(null);
@@ -28,7 +18,6 @@ const UserManagement = ()=> {
   const actionsRef = useRef(null)
   const { users } = useSelector(state=>state.organisation);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   useEffect(()=>{
     fetchUser();
@@ -60,8 +49,11 @@ const UserManagement = ()=> {
       accessor: "name",
       cell: (value, row) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-linear-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-medium">{value.substring(0, 2).toUpperCase()}</span>
+          <div className="w-10 h-10 bg-linear-to-br  from-blue-300 via-blue-600 to-purple-700 rounded-full flex items-center justify-center overflow-hidden">
+            {
+              row?.avatar ? <img src={row?.avatar} alt="Profile Image" /> :
+              <span className="text-white text-sm font-medium">{value.substring(0, 2).toUpperCase()}</span>
+            }
           </div>
           <div>
             <p className="font-medium text-gray-900">{value}</p>

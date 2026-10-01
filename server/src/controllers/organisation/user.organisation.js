@@ -658,6 +658,105 @@ const deleteSingleProjectFile = asyncHandler(async(req,res)=>{
     )
 })
 
+const getTeamsData = asyncHandler(async (req,res)=>{
+    const userId = req.user._id;
+    const orgId = req.user.organisation;
+
+    const users = await User.find({
+        organisation: orgId,
+        _id: { 
+            $ne: userId
+        },
+        
+    })
+    .select("name avatar email role status jobRole")
+    .lean();
+
+    const updatedFieldUser = await Promise.all(
+        users.map(async(user)=>{
+            const activeTasks = await Task.countDocuments({
+                organisation: orgId,
+                assignedTo: user._id,
+                status: { $in: ["todo","in-progress"]}
+            })
+
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const completedLast30Days = await Task.countDocuments({
+                assignedTo: user._id,
+                organisation: orgId,
+                status: "done",
+                updatedAt: { $gte: thirtyDaysAgo } 
+            });
+
+            const startOfWeek = new Date();
+            const currentDay = startOfWeek.getDay();
+            
+            const diff = startOfWeek.getDate() - currentDay + (currentDay === 0 ? -6 : 1);
+            
+            startOfWeek.setDate(diff);
+            startOfWeek.setHours(0, 0, 0, 0);
+
+            const completedThisWeek = await Task.countDocuments({
+                assignedTo: user._id,
+                organisation: orgId,
+                status: "done",
+                updatedAt: { $gte: startOfWeek } 
+            });
+
+            const projects = await Project.find({
+                organisation: orgId,
+                $or: [
+                    { createdBy: user._id },
+                    { members: user._id }
+                ],
+                status: { $ne: "Completed"}
+            }).select("title status");
+
+            return {
+                ...user,
+                activeTasks,
+                completedLast30Days,
+                completedThisWeek,
+                projects
+            }
+        })
+    )
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200,updatedFieldUser,"User's data is fetched successfully")
+    )
+})
+
+const updateJobRoleByAdmin = asyncHandler(async(req,res)=>{
+  
+    const { userId } = req.params;
+    const { jobRole } = req.body;
+
+    if(!["Trainee","Frontend Developer", "Backend Developer", "Full Stack Developer", "DevOps Engineer", "QA Engineer", "Designer", "Senior Frontend Developer", "Senior Backend Developer"].includes(jobRole)){
+        throw new ApiError(400,"Choose valid Job Role.");
+    }
+
+    const user = await User.findOneAndUpdate(
+        { 
+            _id: userId,
+            organisation: req.user?.organisation,
+            role: {$ne: "admin"}
+        },
+        { $set: { "jobRole": jobRole}},
+        { new: true}
+    )
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200,{ jobRole: user.jobRole, _id: user._id }, "Job Role Updated Successfully")
+    )
+})
+
 export {
     createNewUser,
     getAllUser,
@@ -676,4 +775,6 @@ export {
     getFilesController,
     uploadProjectFileController,
     deleteSingleProjectFile,
+    getTeamsData,
+    updateJobRoleByAdmin,
 }

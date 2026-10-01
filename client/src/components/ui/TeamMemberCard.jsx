@@ -18,6 +18,7 @@ const TeamMemberCard = ({member,updateJobRole})=> {
     }, []);
 
   return (
+    <div className='relative'>
     <div className="bg-white rounded-3xl shadow-2xl shadow-blue-900/10 border border-gray-100 p-6 w-full max-w-115 relative">
       
       {/* 1. Profile Section */}
@@ -25,8 +26,11 @@ const TeamMemberCard = ({member,updateJobRole})=> {
       <div className="flex items-center gap-4 mb-5">
         <div className="relative">
           {/* Gradient Avatar */}
-          <div className="w-13 h-13 rounded-full bg-linear-to-br from-blue-500 via-blue-300 to-blue-500 flex items-center justify-center text-gray-100 text-xl font-bold shadow-sm">
-            {member.name?.slice(0,2).toUpperCase()}
+          <div className="w-12 h-12 bg-linear-to-br  from-blue-300 via-blue-600 to-purple-700 rounded-full flex items-center justify-center overflow-hidden border-2 border-gray-300">
+            {
+              member?.avatar ? <img src={member?.avatar} alt="Profile Image" /> :
+              <span className="text-white text-md font-medium">{member?.name?.substring(0, 2).toUpperCase()}</span>
+            }
           </div>
           {/* Online Indicator */}
           <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-[3px] border-white rounded-full"></div>
@@ -150,6 +154,7 @@ const TeamMemberCard = ({member,updateJobRole})=> {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

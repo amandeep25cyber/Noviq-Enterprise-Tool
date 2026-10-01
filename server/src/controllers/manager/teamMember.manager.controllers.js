@@ -3,6 +3,7 @@ import { User } from "../../models/user.models.js";
 import { Task } from "../../models/task.models.js"
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js"
+import { ApiError } from "../../utils/ApiError.js";
 
 const getUsersData = asyncHandler(async (req,res)=>{
     const userId = req.user._id;
@@ -100,6 +101,10 @@ const updateJobRole = asyncHandler(async(req,res)=>{
   
     const { userId } = req.params;
     const { jobRole } = req.body;
+
+    if(!["Trainee","Frontend Developer", "Backend Developer", "Full Stack Developer", "DevOps Engineer", "QA Engineer", "Designer", "Senior Frontend Developer", "Senior Backend Developer"].includes(jobRole)){
+        throw new ApiError(400,"Choose valid job role.")
+    }
 
     const user = await User.findOneAndUpdate(
         { 
