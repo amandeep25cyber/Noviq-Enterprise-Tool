@@ -1,5 +1,8 @@
 import { Server } from "socket.io";
 import { verifySocketToken } from "../middlewares/verifySocketToken.js";
+import { chatHandler } from "./chatHandler.sockets.js";
+
+ export const onlineUsers = new Map();
 
 const socketConfig = (server) =>{
     const io = new Server(server,{
@@ -14,13 +17,25 @@ const socketConfig = (server) =>{
     io.use(verifySocketToken);
 
     io.on("connection",(socket)=>{
-        console.log(`Naya authenticated socket user connect hua: ${socket?.user?.userId}`);
+
+        const { userId, role, orgId } = socket.user;
+
+        onlineUsers.set(userId, {
+            socketId: socket.id,
+            role: role,
+            orgId: orgId
+        });
+
+        console.log(`Naya authenticated socket user connect hua: ${userId} || ${role}`);
 
         // Modules attach karna
-        // chatHandler(io, socket);
+        chatHandler(io, socket);
+
+        
 
         socket.on('disconnect', () => {
-            console.log(`User disconnect hua: ${socket?.user?.userId}`);
+            console.log(`User disconnected : ${userId}`);
+            onlineUsers.delete(userId);
         });
     })
 }
