@@ -8,20 +8,34 @@ const SocketProvider = ({children}) =>{
 
     const { isLoggedIn } = useSelector(state=>state.auth)
 
-    useEffect(()=>{
-
-        if(!isLoggedIn ) return;
+    useEffect(() => {
+        
+        if (!isLoggedIn) {
+           
+            if (socket) {
+                setSocket(null);
+            }
+            return;
+        }
 
         const URI = import.meta.env.VITE_SOCKET_URI;
 
-        const socketInstance = io(URI);
+        const socketInstance = io(URI, { withCredentials: true });
+
+        socketInstance.on("connect", () => {
+            console.log("Connected with Socket ID:", socketInstance.id);
+        });
+
+        socketInstance.on("connect_error", (err) => {
+            console.error("Socket Connection Error:", err.message);
+        });
 
         setSocket(socketInstance);
 
         return () => {
             socketInstance.disconnect();
-        }
-    },[isLoggedIn])
+        };
+    }, [isLoggedIn]);
 
     return (
         <SocketContext.Provider value={socket}>
