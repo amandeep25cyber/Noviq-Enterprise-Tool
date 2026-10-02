@@ -1,4 +1,4 @@
-import { Folder, MessageSquare, Mail, TrendingUp, MoreVertical, Edit2, X } from 'lucide-react';
+import { Folder, MessageSquare, Crown, Mail, TrendingUp, MoreVertical, Edit2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const ROLES = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "DevOps Engineer", "QA Engineer", "Designer", "Senior Frontend Developer", "Senior Backend Developer"];
@@ -19,7 +19,8 @@ const TeamMemberCard = ({member,updateJobRole})=> {
 
   return (
     <div className='relative'>
-    <div className="bg-white rounded-3xl shadow-2xl shadow-blue-900/10 border border-gray-100 p-6 w-full max-w-115 relative">
+      { member?.role ==="admin" &&  <Crown className='ml-4 pt-1 text-black'/>}
+    <div title={`${member.role==="admin"? "Admin" : member.role==="manager" ? "Project Manager" : "Member" }`} className={`${member.role==="admin"? "bg-orange-200" : member.role==="manager" ? "bg-gray-200" : "bg-white" }  rounded-3xl shadow-2xl shadow-blue-900/10 border ${member.role==="admin"? "border-orange-400" : member.role==="manager" ? "border-gray-400" : "border-gray-200" } p-6 w-full max-w-115 relative`}>
       
       {/* 1. Profile Section */}
       <div className='flex justify-between items-center'>

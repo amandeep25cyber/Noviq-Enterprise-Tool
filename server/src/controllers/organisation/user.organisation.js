@@ -743,8 +743,7 @@ const updateJobRoleByAdmin = asyncHandler(async(req,res)=>{
     const user = await User.findOneAndUpdate(
         { 
             _id: userId,
-            organisation: req.user?.organisation,
-            role: {$ne: "admin"}
+            organisation: req.user?.organisation
         },
         { $set: { "jobRole": jobRole}},
         { new: true}
@@ -753,7 +752,7 @@ const updateJobRoleByAdmin = asyncHandler(async(req,res)=>{
     res
     .status(200)
     .json(
-        new ApiResponse(200,{ jobRole: user.jobRole, _id: user._id }, "Job Role Updated Successfully")
+        new ApiResponse(200,{ jobRole: user?.jobRole, _id: user?._id }, "Job Role Updated Successfully")
     )
 })
 
