@@ -28,6 +28,11 @@ app.use(express.urlencoded());
 app.use(cookieParser());
 app.use(express.static('public'));
 
+// Health checks for render deployment
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use('/api/v2/auth',authRouter)
 app.use('/api/v2/organisation',organisationRoute);
 app.use('/api/v2/member',memberRoute);
