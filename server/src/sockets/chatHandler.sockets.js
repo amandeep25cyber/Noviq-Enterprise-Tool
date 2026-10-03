@@ -14,13 +14,15 @@ const chatHandler = (io, socket) => {
     });
 
     socket.on("send_direct_message", (data) => {
-        const { receiverId, message, senderOrgId } = data;
+        const { receiverId, message} = data;
+        const senderId = String(socket?.user?.userId);
+        const senderOrgId = String(socket?.user?.orgId);
 
         const receiverData = onlineUsers.get(receiverId);
-
-        if (receiverData && receiverData.orgId === senderOrgId) {
-            io.to(receiverData.socketId).emit("receive_direct_message", {
-                senderId: socket?.user?.userId,
+       
+        if (receiverData && receiverData?.orgId === senderOrgId) {
+            io.to(receiverData?.socketId).emit("receive_direct_message", {
+                senderId: senderId,
                 message: message,
                 timestamp: new Date(),
             });
@@ -35,7 +37,7 @@ const chatHandler = (io, socket) => {
         const { projectId, message } = data;
 
         socket.to(`project_${projectId}`).emit("receive_project_message", {
-            senderId: socket?.user?.userId,
+            senderId: String(socket?.user?.userId),
             projectId: projectId,
             message: message,
             timestamp: new Date(),

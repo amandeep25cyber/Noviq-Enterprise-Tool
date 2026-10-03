@@ -20,10 +20,10 @@ const socketConfig = (server) =>{
 
         const { userId, role, orgId } = socket.user;
 
-        onlineUsers.set(userId, {
+        onlineUsers.set(String(userId), {
             socketId: socket.id,
             role: role,
-            orgId: orgId
+            orgId: String(orgId)
         });
 
         console.log(`Naya authenticated socket user connect hua: ${userId} || ${role}`);
@@ -35,7 +35,7 @@ const socketConfig = (server) =>{
 
         socket.on('disconnect', () => {
             console.log(`User disconnected : ${userId}`);
-            onlineUsers.delete(userId);
+            onlineUsers.delete(String(userId));
         });
     })
 }
