@@ -7,7 +7,7 @@ const chatHandler = (io, socket) => {
             projectIds.forEach((projectId) => {
                 socket.join(`project_${projectId}`);
                 console.log(
-                    `User ${userId} (${role}) joined project room: project_${projectId}`,
+                    `User ${socket?.user?.userId} (${socket?.user?.role}) joined project room: project_${projectId}`,
                 );
             });
         }
@@ -20,7 +20,7 @@ const chatHandler = (io, socket) => {
 
         if (receiverData && receiverData.orgId === senderOrgId) {
             io.to(receiverData.socketId).emit("receive_direct_message", {
-                senderId: userId,
+                senderId: socket?.user?.userId,
                 message: message,
                 timestamp: new Date(),
             });
@@ -35,7 +35,7 @@ const chatHandler = (io, socket) => {
         const { projectId, message } = data;
 
         socket.to(`project_${projectId}`).emit("receive_project_message", {
-            senderId: userId,
+            senderId: socket?.user?.userId,
             projectId: projectId,
             message: message,
             timestamp: new Date(),
