@@ -3,7 +3,7 @@ services:
   server:
     build:
       context: ./server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: task_tracker_server
     restart: always
     ports:
