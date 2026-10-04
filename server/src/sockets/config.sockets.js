@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { verifySocketToken } from "../middlewares/verifySocketToken.js";
 import { chatHandler } from "./chatHandler.sockets.js";
+import { handleUserStatus } from "./handleUserStatus.js";
 
  export const onlineUsers = new Map();
 
@@ -28,15 +29,12 @@ const socketConfig = (server) =>{
 
         console.log(`Naya authenticated socket user connect hua: ${userId} || ${role}`);
 
+        // Status handler of the user
+        handleUserStatus(io,socket);
+
         // Modules attach karna
         chatHandler(io, socket);
 
-        
-
-        socket.on('disconnect', () => {
-            console.log(`User disconnected : ${userId}`);
-            onlineUsers.delete(String(userId));
-        });
     })
 }
 
