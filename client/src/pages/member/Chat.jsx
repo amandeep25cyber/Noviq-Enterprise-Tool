@@ -1,6 +1,8 @@
 import { Card } from "../../components/ui/Card";
 import { Search, Send, Paperclip, Smile, MoreVertical, Hash, Phone, Video } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
+import { getTeamMembers } from "../../services/shared.services.js";
 
 const initialRooms = [
   { id: 1, name: "general", unread: 0 },
@@ -43,22 +45,38 @@ const seedMessages = {
 };
 
 const statusColor = {
-  online: "bg-emerald-500",
-  away: "bg-amber-400",
-  offline: "bg-gray-400",
+  Active: "bg-emerald-500",
+  Inactive: "bg-gray-400",
 };
 
 function now() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const Chat = ({ role })=> {
+const Chat = ()=> {
   const [rooms, setRooms] = useState(initialRooms);
   const [selectedRoomId, setSelectedRoomId] = useState(1);
   const [messages, setMessages] = useState(seedMessages);
   const [draft, setDraft] = useState("");
   const [sidebarSearch, setSidebarSearch] = useState("");
   const bottomRef = useRef(null);
+  const [teamMembers,setTeamMembers] = useState([]);
+
+  useEffect(()=>{
+    getUsersData();
+  },[]);
+
+  const getUsersData = async()=>{
+    try {
+      const res = await getTeamMembers();
+      setTeamMembers(res?.data);
+      console.log(res?.data);
+
+    } catch (error) {
+      console.log(error?.response?.data?.message);
+      toast.error(error?.response?.data?.message)
+    }
+  }
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
 
@@ -149,13 +167,17 @@ const Chat = ({ role })=> {
               <div className="space-y-0.5">
                 {teamMembers.map((member) => (
                   <button
-                    key={member.id}
+                    key={member._id}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <div className="relative">
-                        <div className="w-6 h-6 bg-linear-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-[9px] font-semibold">{member.avatar}</span>
+                        <div className="w-6 h-6 bg-linear-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center overflow-hidden">
+                          {
+                          member.avatar ?
+                           <img src={member.avatar} alt="Member Logo" /> : 
+                           <span className="text-white font-semibold text-[9px">{member.name.slice(0,1).toUpperCase()}</span>
+                          }
                         </div>
                         <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${statusColor[member.status]}`} />
                       </div>
