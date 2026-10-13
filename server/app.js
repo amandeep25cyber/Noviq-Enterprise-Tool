@@ -6,6 +6,7 @@ import authRouter from "./src/routes/auth.routes.js"
 import organisationRoute from "./src/routes/organisation.routes.js"
 import memberRoute from "./src/routes/member.routes.js";
 import managerRoute from "./src/routes/manager.routes.js";
+import sharedChatRouter from "./src/routes/shared.chat.routes.js"
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/v2/auth',authRouter)
 app.use('/api/v2/organisation',organisationRoute);
 app.use('/api/v2/member',memberRoute);
 app.use('/api/v2/manager',managerRoute);
+app.use('/api/v2/shared',sharedChatRouter);
 
 // Error handling code
 app.use((err, req, res, next) => {
