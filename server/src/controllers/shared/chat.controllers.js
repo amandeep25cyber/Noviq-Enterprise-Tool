@@ -226,10 +226,96 @@ const getProjectMessageController = asyncHandler(async(req,res)=>{
     )
 })
 
+const getSidebarProjectChats = asyncHandler(async(req, res) => {
+    
+    const authId = req.user?.userId;
+    const organizationId = req.user?.orgId;
+    const userRole = req.user?.role;
+
+    if (!authId || !organizationId || !userRole) {
+        throw new ApiError(400, "User ID, Org ID, or Role missing");
+    }
+
+    const currentUserId = new mongoose.Types.ObjectId(authId);
+    const orgId = new mongoose.Types.ObjectId(organizationId);
+
+    let matchCondition = { organisation: orgId };
+
+    if (userRole === 'member') {
+        matchCondition.members = currentUserId;
+    } 
+    else if (userRole === 'manager') {
+        matchCondition.$or = [
+            { members: currentUserId },
+            { createdBy: currentUserId } 
+        ];
+    } 
+    
+    // 2. Aggregation Pipeline
+    const projectChats = await Project.aggregate([
+        { 
+            $match: matchCondition 
+        },
+        {
+            $lookup: {
+                from: "messages",
+                let: { projectId: "$_id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ["$project", "$$projectId"] 
+                            }
+                        }
+                    },
+                    { $sort: { createdAt: -1 } },
+                    { $limit: 1 }
+                ],
+                as: "latestMessage"
+            }
+        },
+        {
+            $addFields: {
+                lastMessageTime: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$latestMessage" }, 0] },
+                        then: { $arrayElemAt: ["$latestMessage.createdAt", 0] },
+                        else: new Date(0)
+                    }
+                },
+                recentMessageText: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$latestMessage" }, 0] },
+                        then: { $arrayElemAt: ["$latestMessage.message", 0] },
+                        else: ""
+                    }
+                }
+            }
+        },
+        { 
+            $sort: { lastMessageTime: -1 } 
+        },
+        { 
+            $project: {
+                name: 1, 
+                lastMessageTime: 1,
+                recentMessageText: 1
+            } 
+        }
+    ]);
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200, projectChats, "Project chats fetched successfully")
+    );
+});
+
 export {
     directMessageController,
     getDirectMessageController,
     getSidebarMembers,
     projectMessageController,
     getProjectMessageController,
+    getSidebarProjectChats,
 }
