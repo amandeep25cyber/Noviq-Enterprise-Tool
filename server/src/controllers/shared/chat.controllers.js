@@ -4,6 +4,7 @@ import { User } from "../../models/user.models.js";
 import { Message } from "../../models/message.models.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import mongoose from "mongoose";
+import { Project } from "../../models/project.models.js";
 
 const directMessageController = asyncHandler(async(req,res)=>{
 
@@ -138,8 +139,97 @@ const getSidebarMembers = asyncHandler(async(req,res)=>{
     )
 })
 
+const projectMessageController = asyncHandler(async(req,res)=>{
+
+    const { message, projectId } = req.body;
+
+    if(!message){
+        throw new ApiError(400,"Empty Message is not allowed");
+    }
+
+    if(!projectId){
+        throw new ApiError(400,"Empty Id is not allowed");
+    }
+
+    const project = await Project.findById(projectId);
+
+    if(!project){
+        throw new ApiError(404,"Invalid reciever Credetials.");
+    }
+
+    if(req?.user?.orgId?.toString() !== project?.organisation?.toString()){
+        throw new ApiError(403,"Can't send message to other organisation's group.");
+    }
+
+    if(req?.user?.role !== "admin"){
+        const userIdString = req.user?.userId?.toString();
+        
+        const isMember = project.members?.some(id => id.toString() === userIdString);
+        const isCreator = project.createdBy?.toString() === userIdString;
+
+        if (!isMember && !isCreator) {
+            throw new ApiError(403, "You do not have permission to chat in this project.");
+        }
+    }
+
+    const createdMessage = await Message.create({
+        organisation: req?.user?.orgId,
+        message,
+        sender: req.user?.userId,
+        project: projectId
+    })
+
+    if(!createdMessage){
+        throw new ApiError(500, "Failed to send the message.");
+    }
+
+    res
+    .status(201)
+    .json(
+        new ApiResponse(201,createdMessage,"Message Send.")
+    )
+})
+
+const getProjectMessageController = asyncHandler(async(req,res)=>{
+    const projectId = req.params?.projectId; 
+    
+    if(!projectId){
+        throw new ApiError(400,"Invalid Id.");
+    }
+
+    const project = await Project.findById(projectId);
+
+    if(!project){
+        throw new ApiError(404,"Project doesn't exist")
+    }
+
+    if(req?.user?.role !== "admin"){
+        const userIdString = req.user?.userId?.toString();
+        
+        const isMember = project.members?.some(id => id.toString() === userIdString);
+        const isCreator = project.createdBy?.toString() === userIdString;
+
+        if (!isMember && !isCreator) {
+            throw new ApiError(403, "You do not have permission to fetch chat in this project.");
+        }
+    }
+
+    const messages = await Message.find({
+        organisation: req?.user?.orgId, 
+        project: projectId
+        }).sort({ createdAt: 1 }); //naya vala niche hoga message
+
+    res
+    .status(200)
+    .json(
+        new ApiResponse(200,messages,"Messages fetched Successfully.")
+    )
+})
+
 export {
     directMessageController,
     getDirectMessageController,
     getSidebarMembers,
+    projectMessageController,
+    getProjectMessageController,
 }

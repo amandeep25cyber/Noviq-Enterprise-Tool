@@ -12,12 +12,6 @@ const initialRooms = [
   { id: 5, name: "random", unread: 0 },
 ];
 
-const teamMembers = [
-  { id: 1, name: "Emily Davis", status: "online", avatar: "ED", unread: 0 },
-  { id: 2, name: "John Smith", status: "online", avatar: "JS", unread: 2 },
-  { id: 3, name: "Lisa Wong", status: "away", avatar: "LW", unread: 0 },
-  { id: 4, name: "David Miller", status: "offline", avatar: "DM", unread: 0 },
-];
 
 const seedMessages = {
   1: [
@@ -53,20 +47,20 @@ function now() {
   return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const Chat = ()=> {
+const Chat = () => {
   const [rooms, setRooms] = useState(initialRooms);
   const [selectedRoomId, setSelectedRoomId] = useState(1);
   const [messages, setMessages] = useState(seedMessages);
   const [draft, setDraft] = useState("");
   const [sidebarSearch, setSidebarSearch] = useState("");
   const bottomRef = useRef(null);
-  const [teamMembers,setTeamMembers] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
 
-  useEffect(()=>{
-    getUsersData();
-  },[]);
+  useEffect(() => {
+    getTeamMembersData();
+  }, []);
 
-  const getUsersData = async()=>{
+  const getTeamMembersData = async () => {
     try {
       const res = await getTeamMembers();
       setTeamMembers(res?.data);
@@ -79,13 +73,13 @@ const Chat = ()=> {
   }
 
   const selectedRoom = rooms.find((r) => r.id === selectedRoomId);
-
-  if (!selectedRoom) return null;
   const currentMessages = messages[selectedRoomId] ?? [];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentMessages.length, selectedRoomId]);
+
+  if (!selectedRoom) return null;
 
   const selectRoom = (roomId) => {
     setSelectedRoomId(roomId);
@@ -144,9 +138,8 @@ const Chat = ()=> {
                   <button
                     key={room.id}
                     onClick={() => selectRoom(room.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                      selectedRoomId === room.id ? "bg-blue-50 text-blue-700 font-semibold" : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${selectedRoomId === room.id ? "bg-blue-50 text-blue-700 font-semibold" : "text-gray-700 hover:bg-gray-50"
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <span className="text-gray-400 font-medium">#</span>
@@ -174,9 +167,9 @@ const Chat = ()=> {
                       <div className="relative">
                         <div className="w-6 h-6 bg-linear-to-br from-violet-500 to-violet-600 rounded-full flex items-center justify-center overflow-hidden">
                           {
-                          member.avatar ?
-                           <img src={member.avatar} alt="Member Logo" /> : 
-                           <span className="text-white font-semibold text-[9px">{member.name.slice(0,1).toUpperCase()}</span>
+                            member.avatar ?
+                              <img src={member.avatar} alt="Member Logo" /> :
+                              <span className="text-white font-semibold text-[9px">{member.name.slice(0, 1).toUpperCase()}</span>
                           }
                         </div>
                         <span className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-white ${statusColor[member.status]}`} />
@@ -228,9 +221,8 @@ const Chat = ()=> {
               return (
                 <div key={msg.id} className={`flex gap-3 ${msg.isOwn ? "flex-row-reverse" : ""}`}>
                   {showHeader && (
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                      msg.isOwn ? "bg-linear-to-br from-blue-500 to-blue-600" : "bg-linear-to-br from-violet-500 to-violet-600"
-                    }`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${msg.isOwn ? "bg-linear-to-br from-blue-500 to-blue-600" : "bg-linear-to-br from-violet-500 to-violet-600"
+                      }`}>
                       <span className="text-white text-xs font-semibold">{msg.avatar}</span>
                     </div>
                   )}
@@ -242,11 +234,10 @@ const Chat = ()=> {
                         <span className="text-[11px] text-gray-400">{msg.time}</span>
                       </div>
                     )}
-                    <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      msg.isOwn
-                        ? "bg-blue-600 text-white rounded-tr-sm"
-                        : "bg-gray-100 text-gray-900 rounded-tl-sm"
-                    }`}>
+                    <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.isOwn
+                      ? "bg-blue-600 text-white rounded-tr-sm"
+                      : "bg-gray-100 text-gray-900 rounded-tl-sm"
+                      }`}>
                       {msg.text}
                     </div>
                   </div>
