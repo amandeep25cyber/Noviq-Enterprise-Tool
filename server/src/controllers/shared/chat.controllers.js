@@ -297,7 +297,7 @@ const getSidebarProjectChats = asyncHandler(async(req, res) => {
         },
         { 
             $project: {
-                name: 1, 
+                title: 1, 
                 lastMessageTime: 1,
                 recentMessageText: 1
             } 
